@@ -43,6 +43,7 @@ Console.WriteLine($"  ↳ Artigos existentes: {existingArticles.Count}");
 Console.WriteLine();
 
 // --- Fetch window: sempre desde 01/04/2026, seenIds evita reprocessamento ---
+bool isBackfill = true;
 var backfillStart  = new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc);
 int maxPerSource   = 25;   // máximo de traduções por fonte por execução
 
@@ -155,7 +156,7 @@ Console.WriteLine("📡 [3/4] Buscando papers no HuggingFace Daily...");
 try
 {
     var hfPapers = isBackfill
-        ? await hfService.FetchFromDateAsync(backfillStart, maxPerDay: 5)
+        ? await hfService.FetchFromDateAsync(backfillStart)
         : await hfService.FetchRecentAsync(maxResults: 20);
 
     int hfCount = 0;

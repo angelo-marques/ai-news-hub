@@ -13,8 +13,11 @@ public class HuggingFaceService(HttpClient http)
     };
 
     /// Fetch today's papers only
-    public async Task<List<HuggingFacePaper>> FetchRecentAsync(int maxResults = 20) =>
-        await FetchDayAsync(DateTime.UtcNow.Date, maxResults);
+    public async Task<List<HuggingFacePaper>> FetchRecentAsync(int maxResults = 20)
+    {
+        var papers = await FetchDayAsync(DateTime.UtcNow.Date);
+        return papers.Take(maxResults).ToList();
+    }
 
     /// Fetch ALL papers from startDate to today — sem limite por dia, seenIds faz o dedup
     public async Task<List<HuggingFacePaper>> FetchFromDateAsync(DateTime startDate)
