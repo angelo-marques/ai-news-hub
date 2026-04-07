@@ -242,11 +242,45 @@ As tags devem ser palavras-chave em inglês ou PT-BR relevantes ao tema (ex: "de
 """;
     }
 
+    private readonly string? _fallbackApiUrl = Environment.GetEnvironmentVariable("FALLBACK_API_URL");
+    private readonly string? _fallbackApiKey = Environment.GetEnvironmentVariable("FALLBACK_API_KEY");
+    private readonly string _fallbackModel = Environment.GetEnvironmentVariable("FALLBACK_MODEL") ?? "google/gemini-flash-1.5";
+
     private async Task<TranslationResult?> CallGroqAsync(string prompt)
+    {
+        int maxRetries = 3;
+        int baseDelayMs = 2000;
+
+        // Tenta provedor primário com Exponential Backoff
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
+        {
+            var result = await TryCallApiAsync(prompt, ApiUrl, apiKey, Model);
+            if (result != null) return result;
+
+            if (attempt < maxRetries)
+            {
+                int delay = baseDelayMs * (int)Math.Pow(2, attempt - 1);
+                Console.WriteLine($"    [AVISO] Primário falhou (Tentativa {attempt}/{maxRetries}). Aguardando {delay}ms...");
+                await Task.Delay(delay);
+            }
+        }
+
+        // Tenta Fallback se configurado
+        if (!string.IsNullOrWhiteSpace(_fallbackApiKey) && !string.IsNullOrWhiteSpace(_fallbackApiUrl))
+        {
+            Console.WriteLine($"    [AVISO] Limite primário esgotado! Tentando transição para Fallback ({_fallbackApiUrl})...");
+            var fallbackResult = await TryCallApiAsync(prompt, _fallbackApiUrl, _fallbackApiKey, _fallbackModel);
+            if (fallbackResult != null) return fallbackResult;
+        }
+
+        return null;
+    }
+
+    private async Task<TranslationResult?> TryCallApiAsync(string prompt, string apiUrl, string key, string modelName)
     {
         var requestBody = new
         {
-            model = Model,
+            model = modelName,
             max_tokens = 1800,
             messages = new[]
             {
@@ -254,30 +288,33 @@ As tags devem ser palavras-chave em inglês ou PT-BR relevantes ao tema (ex: "de
             }
         };
 
-        using var req = new HttpRequestMessage(HttpMethod.Post, ApiUrl);
-        req.Headers.Add("Authorization", $"Bearer {apiKey}");
+        using var req = new HttpRequestMessage(HttpMethod.Post, apiUrl);
+        req.Headers.Add("Authorization", $"Bearer {key}");
+        // OpenRouter optional headers support (won't affect Groq)
+        req.Headers.Add("HTTP-Referer", "https://hubiasbrasil.dev");
+        req.Headers.Add("X-Title", "Hub IA Brasil Crawler");
         req.Content = new StringContent(
             JsonSerializer.Serialize(requestBody),
             Encoding.UTF8,
             "application/json"
         );
 
-        using var resp = await http.SendAsync(req);
-        var body = await resp.Content.ReadAsStringAsync();
-
-        if (!resp.IsSuccessStatusCode)
-        {
-            Console.WriteLine($"    [ERRO Groq] {resp.StatusCode}: {body[..Math.Min(300, body.Length)]}");
-            return null;
-        }
-
-        var apiResp = JsonSerializer.Deserialize<GroqApiResponse>(body, JsonOptions);
-        var text = apiResp?.Choices?.FirstOrDefault()?.Message?.Content;
-
-        if (string.IsNullOrWhiteSpace(text)) return null;
-
         try
         {
+            using var resp = await http.SendAsync(req);
+            var body = await resp.Content.ReadAsStringAsync();
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"    [ERRO API] [{new Uri(apiUrl).Host}] {resp.StatusCode}: {body[..Math.Min(300, body.Length)]}");
+                return null;
+            }
+
+            var apiResp = JsonSerializer.Deserialize<GroqApiResponse>(body, JsonOptions);
+            var text = apiResp?.Choices?.FirstOrDefault()?.Message?.Content;
+
+            if (string.IsNullOrWhiteSpace(text)) return null;
+
             var json = text.Trim();
             if (json.StartsWith("```"))
             {
@@ -289,8 +326,7 @@ As tags devem ser palavras-chave em inglês ou PT-BR relevantes ao tema (ex: "de
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"    [ERRO parse] {ex.Message}");
-            Console.WriteLine($"    Raw: {text[..Math.Min(400, text.Length)]}");
+            Console.WriteLine($"    [ERRO parse/network] {ex.Message}");
             return null;
         }
     }

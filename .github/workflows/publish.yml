@@ -63,6 +63,9 @@ jobs:
       - name: 📰 Coletar & traduzir papers de IA
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          FALLBACK_API_KEY: ${{ secrets.FALLBACK_API_KEY }}
+          FALLBACK_API_URL: ${{ secrets.FALLBACK_API_URL }}
+          FALLBACK_MODEL: ${{ secrets.FALLBACK_MODEL }}
           DATA_DIR: ${{ github.workspace }}/data
         run: |
           dotnet run --project src/DataFetcher/DataFetcher.csproj \
