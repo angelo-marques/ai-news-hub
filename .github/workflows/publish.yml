@@ -1,0 +1,149 @@
+name: 🤖 Coletar Notícias IA & Publicar
+
+# ─── Executa 3× por dia (horário de Brasília, GMT-3) ───────────────────────
+# cron usa UTC:
+#   07:00 BRT = 10:00 UTC  (manhã)
+#   14:00 BRT = 17:00 UTC  (tarde)
+#   21:00 BRT = 00:00 UTC  (noite)
+on:
+  schedule:
+    - cron: '0 10 * * *'   # 07:00 BRT — manhã
+    - cron: '0 17 * * *'   # 14:00 BRT — tarde
+    - cron: '0 0 * * *'    # 21:00 BRT — noite
+  workflow_dispatch:        # execução manual via GitHub UI
+    inputs:
+      debug:
+        description: 'Modo debug (verbose)'
+        type: boolean
+        default: false
+
+# Garante que apenas uma instância roda por vez (sem duplicação de dados)
+concurrency:
+  group: hub-ia-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: write      # para commitar data/articles.json
+  pages: write         # para publicar no GitHub Pages
+  id-token: write      # OIDC para Pages deployment
+
+jobs:
+  fetch-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      # ── 1. Checkout ────────────────────────────────────────────────────
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0          # histórico completo para o commit
+
+      # ── 2. .NET 10 ─────────────────────────────────────────────────────
+      - name: ⚙️ Setup .NET 10 (preview)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'preview'
+
+      # ── 3. Restaurar dependências ───────────────────────────────────────
+      - name: 📦 Restore
+        run: dotnet restore src/DataFetcher/DataFetcher.csproj
+
+      # ── 4. Buscar e traduzir papers ─────────────────────────────────────
+      - name: 📰 Coletar & traduzir papers de IA
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          DATA_DIR: ${{ github.workspace }}/data
+        run: |
+          dotnet run --project src/DataFetcher/DataFetcher.csproj \
+            -c Release --no-restore
+
+      # ── 5. Contar artigos e validar output ──────────────────────────────
+      - name: 🔢 Validar artigos gerados
+        run: |
+          ARTICLE_COUNT=$(python3 -c "import json; print(len(json.load(open('data/articles.json'))))")
+          echo "Total de artigos: $ARTICLE_COUNT"
+          echo "ARTICLE_COUNT=$ARTICLE_COUNT" >> $GITHUB_ENV
+          if [ "$ARTICLE_COUNT" -eq 0 ]; then
+            echo "⚠️ Aviso: nenhum artigo encontrado (pode ser normal no primeiro run)"
+          fi
+
+      # ── 6. Commit dos dados atualizados ─────────────────────────────────
+      - name: 💾 Commit dados
+        run: |
+          git config --global user.name  'Hub IA Brasil Bot'
+          git config --global user.email 'noreply@hub-ia-brasil.dev'
+          git add data/articles.json data/seen-ids.json
+          if git diff --staged --quiet; then
+            echo "Nenhuma alteração nos dados — sem commit necessário."
+          else
+            TIMESTAMP=$(TZ='America/Sao_Paulo' date +'%d/%m/%Y %H:%M BRT')
+            git commit -m "📰 Atualização automática — $TIMESTAMP (${{ env.ARTICLE_COUNT }} artigos)"
+            git push
+          fi
+
+      # ── 7. Copiar artigos para wwwroot ───────────────────────────────────
+      - name: 📋 Copiar articles.json → wwwroot
+        run: |
+          mkdir -p src/WebApp/wwwroot/data
+          cp data/articles.json src/WebApp/wwwroot/data/articles.json
+          echo "✅ articles.json copiado (${{ env.ARTICLE_COUNT }} artigos)"
+
+      # ── 8. Ajustar base href para o repositório ──────────────────────────
+      - name: 🔗 Configurar base href para GitHub Pages
+        run: |
+          REPO_NAME="${{ github.event.repository.name }}"
+          # Para repositórios user.github.io (root), base = "/"
+          # Para outros repos, base = "/nome-do-repo/"
+          if [[ "$REPO_NAME" == "${{ github.repository_owner }}.github.io" ]]; then
+            BASE_HREF="/"
+          else
+            BASE_HREF="/$REPO_NAME/"
+          fi
+          echo "Base href: $BASE_HREF"
+          sed -i "s|<base href=\"/\" />|<base href=\"$BASE_HREF\" />|g" \
+            src/WebApp/wwwroot/index.html
+
+      # ── 9. Build Blazor WebAssembly ──────────────────────────────────────
+      - name: 🏗️ Build Blazor WASM
+        run: |
+          dotnet restore src/WebApp/WebApp.csproj
+          dotnet publish src/WebApp/WebApp.csproj \
+            -c Release \
+            -o publish/webapp
+
+      # ── 10. Preparar para GitHub Pages ───────────────────────────────────
+      - name: 🛠️ Preparar GitHub Pages
+        run: |
+          PUBLISH_DIR="publish/webapp/wwwroot"
+          # .nojekyll → evita que o Jekyll ignore arquivos que começam com _
+          touch "$PUBLISH_DIR/.nojekyll"
+          # 404.html → fallback para deep linking no Blazor WASM
+          cp "$PUBLISH_DIR/index.html" "$PUBLISH_DIR/404.html"
+          echo "✅ Diretório preparado:"
+          ls -lah "$PUBLISH_DIR" | head -20
+
+      # ── 11. Upload artifact para Pages ───────────────────────────────────
+      - name: ⬆️ Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: publish/webapp/wwwroot
+
+      # ── 12. Deploy ───────────────────────────────────────────────────────
+      - name: 🚀 Deploy para GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
+
+      - name: ✅ Resumo do deploy
+        run: |
+          echo "## 🤖 Hub IA Brasil — Deploy Concluído" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Campo | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| 📰 Artigos publicados | ${{ env.ARTICLE_COUNT }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🌐 URL | ${{ steps.deploy.outputs.page_url }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| ⏰ Horário | $(TZ='America/Sao_Paulo' date +'%d/%m/%Y %H:%M BRT') |" >> $GITHUB_STEP_SUMMARY

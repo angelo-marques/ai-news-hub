@@ -1,0 +1,12 @@
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <PageTitle>Página não encontrada — Hub IA Brasil</PageTitle>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <p class="not-found">Página não encontrada.</p>
+        </LayoutView>
+    </NotFound>
+</Router>

@@ -1,0 +1,12 @@
+@code {
+    [Parameter] public required string Source { get; set; }
+
+    private string CssClass => Source switch
+    {
+        "arXiv" => "badge badge-arxiv",
+        "Papers with Code" => "badge badge-pwc",
+        _ => "badge"
+    };
+}
+
+<span class="@CssClass">@Source</span>

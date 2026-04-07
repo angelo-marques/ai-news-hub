@@ -1,0 +1,20 @@
+## .NET / Build
+bin/
+obj/
+publish/
+*.user
+*.suo
+.vs/
+.vscode/
+
+## Generated at CI time - não commitar
+src/WebApp/wwwroot/data/articles.json
+
+## Segredos
+.env
+*.env
+appsettings.*.json
+
+## OS
+.DS_Store
+Thumbs.db

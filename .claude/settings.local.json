@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh repo:*)",
+      "Bash(gh auth:*)",
+      "Bash(git config:*)",
+      "Bash(where gh:*)",
+      "Read(//c//**)",
+      "Read(//c/Users/marqu/AppData/Local/Programs/**)",
+      "Bash(git -C \"C:\\\\SiteNoticias\\\\ai-news-hub\\\\ai-news-hub\" remote -v)"
+    ]
+  }
+}
