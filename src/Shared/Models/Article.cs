@@ -42,4 +42,7 @@ public record Article
 
     [JsonPropertyName("tags")]
     public string[] Tags { get; init; } = [];
+
+    [JsonPropertyName("translatorProvider")]
+    public string TranslatorProvider { get; init; } = "";
 }

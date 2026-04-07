@@ -92,7 +92,8 @@ public class GroqTranslatorService
             PaperUrl = paper.PaperUrl,
             PublishedAt = paper.PublishedAt,
             FetchedAt = DateTime.UtcNow,
-            Tags = result.Tags
+            Tags = result.Tags,
+            TranslatorProvider = result.Provider
         };
     }
 
@@ -139,7 +140,8 @@ public class GroqTranslatorService
             PaperUrl = paperUrl,
             PublishedAt = publishedAt,
             FetchedAt = DateTime.UtcNow,
-            Tags = result.Tags
+            Tags = result.Tags,
+            TranslatorProvider = result.Provider
         };
     }
 
@@ -185,7 +187,8 @@ public class GroqTranslatorService
             PaperUrl = paperUrl,
             PublishedAt = publishedAt,
             FetchedAt = DateTime.UtcNow,
-            Tags = result.Tags
+            Tags = result.Tags,
+            TranslatorProvider = result.Provider
         };
     }
 
@@ -235,7 +238,8 @@ public class GroqTranslatorService
             CodeUrl = $"https://paperswithcode.com/paper/{paper.Id}#code",
             PublishedAt = publishedAt,
             FetchedAt = DateTime.UtcNow,
-            Tags = result.Tags
+            Tags = result.Tags,
+            TranslatorProvider = result.Provider
         };
     }
 
@@ -300,7 +304,11 @@ As tags devem ser palavras-chave em inglês ou PT-BR relevantes ao tema (ex: "de
             for (int attempt = 1; attempt <= maxRetries; attempt++)
             {
                 var result = await TryExecuteRequestAsync(prompt, provider);
-                if (result != null) return result;
+                if (result != null)
+                {
+                    result.Provider = provider.Name;
+                    return result;
+                }
 
                 if (attempt < maxRetries)
                 {
@@ -386,6 +394,9 @@ public record TranslationResult
 
     [JsonPropertyName("tags")]
     public string[] Tags { get; init; } = [];
+
+    [JsonIgnore]
+    public string Provider { get; set; } = "";
 }
 
 public record GroqApiResponse

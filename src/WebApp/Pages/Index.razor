@@ -142,6 +142,11 @@
                             <span class="meta-date">@featured.PublishedAt.ToString("dd MMM yyyy")</span>
                             <span class="meta-sep">·</span>
                             <span class="meta-authors">@FormatAuthors(featured.Authors)</span>
+                            @if (!string.IsNullOrEmpty(featured.TranslatorProvider))
+                            {
+                                <span class="meta-sep">·</span>
+                                <span class="badge" style="font-size:10px; background:#1a1a2e; color:#4facfe;">✨ IA: @featured.TranslatorProvider</span>
+                            }
                         </div>
                         <h2 class="hero-title">@featured.TitlePt</h2>
                         <div class="hero-tags">
@@ -174,7 +179,13 @@
                                     }
                                 </div>
                                 <h3 class="side-title">@art.TitlePt</h3>
-                                <span class="side-meta">@art.PublishedAt.ToString("dd/MM/yyyy") · @FormatAuthors(art.Authors)</span>
+                                <div class="side-meta">
+                                    <span>@art.PublishedAt.ToString("dd/MM/yyyy")</span> · <span>@FormatAuthors(art.Authors)</span>
+                                    @if (!string.IsNullOrEmpty(art.TranslatorProvider))
+                                    {
+                                        <span class="badge" style="font-size:10px; background:#1a1a2e; color:#4facfe; margin-left:4px;">✨ @art.TranslatorProvider</span>
+                                    }
+                                </div>
                             </div>
                         </article>
                     }
@@ -263,6 +274,11 @@
                                 <span>@art.PublishedAt.ToString("dd/MM/yyyy")</span>
                                 <span class="meta-sep">·</span>
                                 <span>@FormatAuthors(art.Authors)</span>
+                                @if (!string.IsNullOrEmpty(art.TranslatorProvider))
+                                {
+                                    <span class="meta-sep">·</span>
+                                    <span class="badge" style="font-size:10px; background:#1a1a2e; color:#4facfe;">✨ IA: @art.TranslatorProvider</span>
+                                }
                             </div>
                             <div class="card-tags">
                                 @foreach (var tag in art.Tags.Take(3))
@@ -309,6 +325,11 @@
                     </span>
                     <span class="modal-meta-sep">·</span>
                     <span>@FormatAuthors(selectedArticle.Authors)</span>
+                    @if (!string.IsNullOrEmpty(selectedArticle.TranslatorProvider))
+                    {
+                        <span class="modal-meta-sep">·</span>
+                        <span class="badge" style="font-size:10px; background:#1a1a2e; color:#4facfe;">✨ Traduzido por IA: @selectedArticle.TranslatorProvider</span>
+                    }
                 </div>
 
                 <div class="modal-tags">
