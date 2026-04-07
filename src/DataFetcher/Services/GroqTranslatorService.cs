@@ -10,7 +10,7 @@ namespace DataFetcher.Services;
 public class GroqTranslatorService(HttpClient http, string apiKey)
 {
     private const string ApiUrl = "https://api.groq.com/openai/v1/chat/completions";
-    private const string Model = "meta-llama/llama-4-scout-17b-16e-instruct";
+    private const string Model = "llama-3.1-8b-instant";
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
