@@ -11,8 +11,4 @@
     <ProjectReference Include="..\Shared\Shared.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- Garante que articles.json em wwwroot/data é incluído na publicação -->
-    <Content Include="wwwroot\data\**" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
 </Project>
