@@ -36,6 +36,8 @@
                     @onclick='() => SetFilter("pwc")'>Papers w/ Code</button>
             <button class="nav-item @(activeFilter == "hf"    ? "nav-item--active" : "")"
                     @onclick='() => SetFilter("hf")'>Hugging Face</button>
+            <button class="nav-item @(activeFilter == "ss"    ? "nav-item--active" : "")"
+                    @onclick='() => SetFilter("ss")'>Semantic Scholar</button>
         </nav>
 
         <div class="header-actions">
@@ -58,6 +60,7 @@
             <button @onclick='() => { SetFilter("arxiv"); mobileMenuOpen = false; }'>arXiv</button>
             <button @onclick='() => { SetFilter("pwc");   mobileMenuOpen = false; }'>Papers with Code</button>
             <button @onclick='() => { SetFilter("hf");    mobileMenuOpen = false; }'>Hugging Face</button>
+            <button @onclick='() => { SetFilter("ss");    mobileMenuOpen = false; }'>Semantic Scholar</button>
         </div>
     }
 </header>
@@ -195,6 +198,10 @@
                 <button class="pill @(activeFilter == "hf"    ? "pill--active" : "")"
                         @onclick='() => SetFilter("hf")'>
                     Hugging Face <span class="pill-count">@allArticles.Count(a => a.Source == "Hugging Face")</span>
+                </button>
+                <button class="pill @(activeFilter == "ss"    ? "pill--active" : "")"
+                        @onclick='() => SetFilter("ss")'>
+                    Semantic Scholar <span class="pill-count">@allArticles.Count(a => a.Source == "Semantic Scholar")</span>
                 </button>
                 @if (!string.IsNullOrEmpty(activeTag))
                 {
@@ -372,6 +379,7 @@
             "arxiv" => a.Source == "arXiv",
             "pwc"   => a.Source == "Papers with Code",
             "hf"    => a.Source == "Hugging Face",
+            "ss"    => a.Source == "Semantic Scholar",
             _       => true
         })
         .Where(a => string.IsNullOrEmpty(activeTag)   || a.Tags.Contains(activeTag, StringComparer.OrdinalIgnoreCase))

@@ -59,6 +59,53 @@ public class GroqTranslatorService(HttpClient http, string apiKey)
         };
     }
 
+    public async Task<Article?> TranslateSemanticScholarAsync(SemanticScholarPaper paper)
+    {
+        if (string.IsNullOrWhiteSpace(paper.Abstract)) return null;
+
+        var authors = paper.Authors.Select(a => a.Name).ToArray();
+        var authorsStr = authors.Length > 3
+            ? $"{string.Join(", ", authors.Take(3))} et al."
+            : string.Join(", ", authors);
+
+        DateTime publishedAt = DateTime.UtcNow;
+        if (!string.IsNullOrEmpty(paper.PublicationDate) && DateTime.TryParse(paper.PublicationDate, out var dt))
+            publishedAt = dt;
+
+        var paperUrl = paper.Url ?? $"https://www.semanticscholar.org/paper/{paper.PaperId}";
+        var extra = paper.CitationCount > 0 ? $"Citações: {paper.CitationCount}" : "";
+
+        var prompt = BuildPrompt(
+            title: paper.Title,
+            authors: authorsStr,
+            abstract_: paper.Abstract,
+            source: "Semantic Scholar",
+            sourceUrl: paperUrl,
+            extra: extra
+        );
+
+        var result = await CallGroqAsync(prompt);
+        if (result is null) return null;
+
+        var newsHtml = Markdown.ToHtml(result.NewsText, MarkdownPipeline);
+
+        return new Article
+        {
+            Id = $"ss:{paper.PaperId}",
+            Title = paper.Title,
+            TitlePt = result.TitlePt,
+            NewsText = result.NewsText,
+            NewsHtml = newsHtml,
+            Authors = authors,
+            Source = "Semantic Scholar",
+            SourceUrl = "https://www.semanticscholar.org",
+            PaperUrl = paperUrl,
+            PublishedAt = publishedAt,
+            FetchedAt = DateTime.UtcNow,
+            Tags = result.Tags
+        };
+    }
+
     public async Task<Article?> TranslateHfAsync(HuggingFacePaper paper)
     {
         if (string.IsNullOrWhiteSpace(paper.Summary)) return null;

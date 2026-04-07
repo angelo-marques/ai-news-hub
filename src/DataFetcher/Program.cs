@@ -26,11 +26,12 @@ httpClient.DefaultRequestHeaders.Add("User-Agent",
 httpClient.Timeout = TimeSpan.FromSeconds(60);
 
 // --- Initialize Services ---
-var arxivService    = new ArxivService(httpClient);
-var pwcService      = new PapersWithCodeService(httpClient);
-var hfService       = new HuggingFaceService(httpClient);
-var translator      = new GroqTranslatorService(httpClient, apiKey);
-var storage         = new ArticleStorageService();
+var arxivService   = new ArxivService(httpClient);
+var pwcService     = new PapersWithCodeService(httpClient);
+var hfService      = new HuggingFaceService(httpClient);
+var ssService      = new SemanticScholarService(httpClient);
+var translator     = new GroqTranslatorService(httpClient, apiKey);
+var storage        = new ArticleStorageService();
 
 // --- Load State ---
 Console.WriteLine("📂 Carregando estado anterior...");
@@ -41,23 +42,36 @@ Console.WriteLine($"  ↳ IDs já processados: {seenIds.Ids.Count}");
 Console.WriteLine($"  ↳ Artigos existentes: {existingArticles.Count}");
 Console.WriteLine();
 
+// --- Backfill detection ---
+// Backfill desde 01/04/2026 se ainda houver poucos artigos
+var backfillStart = new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc);
+bool isBackfill = existingArticles.Count < 30;
+int maxPerSource = isBackfill ? 10 : 5;
+
+if (isBackfill)
+    Console.WriteLine($"  ⚡ Modo BACKFILL ativo — buscando desde {backfillStart:dd/MM/yyyy}");
+else
+    Console.WriteLine($"  📅 Modo diário — buscando artigos recentes");
+Console.WriteLine();
+
 var newArticles = new List<Article>();
-const int MaxPerSource = 4; // 4 de cada fonte = até 12 por execução
 
 // ═══════════════════════════════════════════════
 // FONTE 1: arXiv
 // ═══════════════════════════════════════════════
 Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-Console.WriteLine("📡 [1/3] Buscando papers no arXiv...");
+Console.WriteLine("📡 [1/4] Buscando papers no arXiv...");
 
 try
 {
-    var arxivPapers = await arxivService.FetchRecentAsync(maxResults: 30);
-    int arxivCount = 0;
+    var arxivPapers = isBackfill
+        ? await arxivService.FetchFromDateAsync(backfillStart, maxResults: 100)
+        : await arxivService.FetchRecentAsync(maxResults: 30);
 
+    int arxivCount = 0;
     foreach (var paper in arxivPapers)
     {
-        if (arxivCount >= MaxPerSource) break;
+        if (arxivCount >= maxPerSource) break;
 
         var fullId = $"arxiv:{paper.Id}";
         if (seenIds.Ids.Contains(fullId))
@@ -79,41 +93,35 @@ try
             Console.WriteLine($"    ✅ → {Truncate(article.TitlePt, 72)}");
             Console.WriteLine($"       Tags: {string.Join(", ", article.Tags.Take(4))}");
         }
-        else
-        {
-            Console.WriteLine($"    ⚠️ Falha na tradução — pulando");
-        }
+        else Console.WriteLine($"    ⚠️ Falha na tradução — pulando");
 
-        await Task.Delay(2000); // Respeitar rate limit da API
+        await Task.Delay(2000);
     }
-
     Console.WriteLine($"\n  arXiv: {arxivCount} novo(s) artigo(s)");
 }
-catch (Exception ex)
-{
-    Console.WriteLine($"  ❌ Erro no arXiv: {ex.Message}");
-}
+catch (Exception ex) { Console.WriteLine($"  ❌ Erro no arXiv: {ex.Message}"); }
 
 // ═══════════════════════════════════════════════
 // FONTE 2: Papers with Code
 // ═══════════════════════════════════════════════
 Console.WriteLine();
 Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-Console.WriteLine("📡 [2/3] Buscando papers no Papers with Code...");
+Console.WriteLine("📡 [2/4] Buscando papers no Papers with Code...");
 
 try
 {
-    var pwcPapers = await pwcService.FetchRecentAsync(pageSize: 20);
-    int pwcCount = 0;
+    var pwcPapers = isBackfill
+        ? await pwcService.FetchFromDateAsync(backfillStart, pageSize: 40)
+        : await pwcService.FetchRecentAsync(pageSize: 20);
 
+    int pwcCount = 0;
     foreach (var paper in pwcPapers)
     {
-        if (pwcCount >= MaxPerSource) break;
+        if (pwcCount >= maxPerSource) break;
 
         var fullId   = $"pwc:{paper.Id}";
         var arxivRef = !string.IsNullOrEmpty(paper.ArxivId) ? $"arxiv:{paper.ArxivId}" : null;
 
-        // Skip se já visto via qualquer ID
         if (seenIds.Ids.Contains(fullId) || (arxivRef is not null && seenIds.Ids.Contains(arxivRef)))
         {
             Console.WriteLine($"  ⊘ [{paper.Id}] já processado");
@@ -122,54 +130,46 @@ try
 
         Console.WriteLine($"\n  ✎ Traduzindo: {Truncate(paper.Title, 72)}");
         Console.WriteLine($"    Autores: {Truncate(string.Join(", ", paper.Authors.Take(2)), 60)}");
-        if (!string.IsNullOrEmpty(paper.Proceeding))
-            Console.WriteLine($"    Conf: {paper.Proceeding}");
 
         var article = await translator.TranslatePwcAsync(paper);
         if (article is not null)
         {
             newArticles.Add(article);
             seenIds.Ids.Add(fullId);
-            if (arxivRef is not null) seenIds.Ids.Add(arxivRef); // cross-dedup
+            if (arxivRef is not null) seenIds.Ids.Add(arxivRef);
             pwcCount++;
             Console.WriteLine($"    ✅ → {Truncate(article.TitlePt, 72)}");
             Console.WriteLine($"       Tags: {string.Join(", ", article.Tags.Take(4))}");
         }
-        else
-        {
-            Console.WriteLine($"    ⚠️ Falha na tradução — pulando");
-        }
+        else Console.WriteLine($"    ⚠️ Falha na tradução — pulando");
 
         await Task.Delay(2000);
     }
-
     Console.WriteLine($"\n  Papers with Code: {pwcCount} novo(s) artigo(s)");
 }
-catch (Exception ex)
-{
-    Console.WriteLine($"  ❌ Erro no Papers with Code: {ex.Message}");
-}
+catch (Exception ex) { Console.WriteLine($"  ❌ Erro no Papers with Code: {ex.Message}"); }
 
 // ═══════════════════════════════════════════════
 // FONTE 3: HuggingFace Daily Papers
 // ═══════════════════════════════════════════════
 Console.WriteLine();
 Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-Console.WriteLine("📡 [3/3] Buscando papers no HuggingFace Daily...");
+Console.WriteLine("📡 [3/4] Buscando papers no HuggingFace Daily...");
 
 try
 {
-    var hfPapers = await hfService.FetchRecentAsync(maxResults: 20);
-    int hfCount = 0;
+    var hfPapers = isBackfill
+        ? await hfService.FetchFromDateAsync(backfillStart, maxPerDay: 5)
+        : await hfService.FetchRecentAsync(maxResults: 20);
 
+    int hfCount = 0;
     foreach (var paper in hfPapers)
     {
-        if (hfCount >= MaxPerSource) break;
+        if (hfCount >= maxPerSource) break;
 
         var fullId   = $"hf:{paper.Id}";
-        var arxivRef = $"arxiv:{paper.Id}"; // HF IDs são arxiv IDs
+        var arxivRef = $"arxiv:{paper.Id}";
 
-        // Skip se já visto via qualquer ID
         if (seenIds.Ids.Contains(fullId) || seenIds.Ids.Contains(arxivRef))
         {
             Console.WriteLine($"  ⊘ [{paper.Id}] já processado");
@@ -184,25 +184,64 @@ try
         {
             newArticles.Add(article);
             seenIds.Ids.Add(fullId);
-            seenIds.Ids.Add(arxivRef); // cross-dedup
+            seenIds.Ids.Add(arxivRef);
             hfCount++;
             Console.WriteLine($"    ✅ → {Truncate(article.TitlePt, 72)}");
             Console.WriteLine($"       Tags: {string.Join(", ", article.Tags.Take(4))}");
         }
-        else
-        {
-            Console.WriteLine($"    ⚠️ Falha na tradução — pulando");
-        }
+        else Console.WriteLine($"    ⚠️ Falha na tradução — pulando");
 
         await Task.Delay(2000);
     }
-
     Console.WriteLine($"\n  HuggingFace: {hfCount} novo(s) artigo(s)");
 }
-catch (Exception ex)
+catch (Exception ex) { Console.WriteLine($"  ❌ Erro no HuggingFace: {ex.Message}"); }
+
+// ═══════════════════════════════════════════════
+// FONTE 4: Semantic Scholar
+// ═══════════════════════════════════════════════
+Console.WriteLine();
+Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+Console.WriteLine("📡 [4/4] Buscando papers no Semantic Scholar...");
+
+try
 {
-    Console.WriteLine($"  ❌ Erro no HuggingFace: {ex.Message}");
+    var ssPapers = await ssService.FetchRecentAsync(backfillStart);
+    int ssCount = 0;
+
+    foreach (var paper in ssPapers)
+    {
+        if (ssCount >= maxPerSource) break;
+
+        var fullId   = $"ss:{paper.PaperId}";
+        var arxivRef = paper.ExternalIds?.ArXiv is not null ? $"arxiv:{paper.ExternalIds.ArXiv}" : null;
+
+        if (seenIds.Ids.Contains(fullId) || (arxivRef is not null && seenIds.Ids.Contains(arxivRef)))
+        {
+            Console.WriteLine($"  ⊘ [{paper.PaperId[..Math.Min(12, paper.PaperId.Length)]}] já processado");
+            continue;
+        }
+
+        Console.WriteLine($"\n  ✎ Traduzindo: {Truncate(paper.Title, 72)}");
+        Console.WriteLine($"    Citações: {paper.CitationCount}");
+
+        var article = await translator.TranslateSemanticScholarAsync(paper);
+        if (article is not null)
+        {
+            newArticles.Add(article);
+            seenIds.Ids.Add(fullId);
+            if (arxivRef is not null) seenIds.Ids.Add(arxivRef);
+            ssCount++;
+            Console.WriteLine($"    ✅ → {Truncate(article.TitlePt, 72)}");
+            Console.WriteLine($"       Tags: {string.Join(", ", article.Tags.Take(4))}");
+        }
+        else Console.WriteLine($"    ⚠️ Falha na tradução — pulando");
+
+        await Task.Delay(2000);
+    }
+    Console.WriteLine($"\n  Semantic Scholar: {ssCount} novo(s) artigo(s)");
 }
+catch (Exception ex) { Console.WriteLine($"  ❌ Erro no Semantic Scholar: {ex.Message}"); }
 
 // ═══════════════════════════════════════════════
 // PERSISTÊNCIA
@@ -211,7 +250,6 @@ Console.WriteLine();
 Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 Console.WriteLine("💾 Salvando dados...");
 
-// Prune artigos com mais de 30 dias
 var cutoff = DateTime.UtcNow.AddDays(-30);
 seenIds.LastUpdated = DateTime.UtcNow;
 
@@ -227,6 +265,7 @@ await storage.SaveSeenIdsAsync(seenIds);
 Console.WriteLine();
 Console.WriteLine("╔══════════════════════════════════════════════════════╗");
 Console.WriteLine($"║  ✅ Concluído com sucesso!                           ║");
+Console.WriteLine($"║     Modo:             {(isBackfill ? "BACKFILL" : "Diário  "),-8}                     ║");
 Console.WriteLine($"║     Novos artigos:    {newArticles.Count,-4}                         ║");
 Console.WriteLine($"║     Total de artigos: {allArticles.Count,-4} (últimos 30 dias)     ║");
 Console.WriteLine($"║     IDs rastreados:   {seenIds.Ids.Count,-5}                        ║");

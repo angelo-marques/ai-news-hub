@@ -10,9 +10,17 @@ public class PapersWithCodeService(HttpClient http)
         PropertyNameCaseInsensitive = true
     };
 
-    public async Task<List<PwcPaper>> FetchRecentAsync(int pageSize = 15)
+    public async Task<List<PwcPaper>> FetchRecentAsync(int pageSize = 15) =>
+        await FetchAsync(pageSize, publishedAfter: null);
+
+    public async Task<List<PwcPaper>> FetchFromDateAsync(DateTime startDate, int pageSize = 40) =>
+        await FetchAsync(pageSize, startDate.ToString("yyyy-MM-dd"));
+
+    private async Task<List<PwcPaper>> FetchAsync(int pageSize, string? publishedAfter)
     {
         var url = $"https://paperswithcode.com/api/v1/papers/?ordering=-published&page_size={pageSize}";
+        if (publishedAfter is not null)
+            url += $"&published_after={publishedAfter}";
 
         try
         {
