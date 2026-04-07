@@ -6,6 +6,8 @@ name: 🤖 Coletar Notícias IA & Publicar
 #   14:00 BRT = 17:00 UTC  (tarde)
 #   21:00 BRT = 00:00 UTC  (noite)
 on:
+  push:
+    branches: [ main ]
   schedule:
     - cron: '0 10 * * *'   # 07:00 BRT — manhã
     - cron: '0 17 * * *'   # 14:00 BRT — tarde
