@@ -49,7 +49,11 @@ jobs:
           dotnet-version: '10.0.x'
           dotnet-quality: 'preview'
 
-      # ── 3. Restaurar dependências ───────────────────────────────────────
+      # ── 3. Instalar workload Blazor WASM ───────────────────────────────
+      - name: 📦 Instalar workload wasm-tools
+        run: dotnet workload install wasm-tools
+
+      # ── 4. Restaurar dependências ───────────────────────────────────────
       - name: 📦 Restore
         run: dotnet restore src/DataFetcher/DataFetcher.csproj
 
