@@ -50,11 +50,16 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
+      # ── 3. Instalar workload Blazor WASM ──────────────────────────────
+      - name: 🔧 Instalar wasm-tools workload
+        run: dotnet workload install wasm-tools
+
       # ── 4. Restaurar dependências ───────────────────────────────────────
       - name: 📦 Restore
         run: dotnet restore src/DataFetcher/DataFetcher.csproj
+        working-directory: ${{ github.workspace }}
 
-      # ── 4. Buscar e traduzir papers ─────────────────────────────────────
+      # ── 5. Buscar e traduzir papers ─────────────────────────────────────
       - name: 📰 Coletar & traduzir papers de IA
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
@@ -62,6 +67,7 @@ jobs:
         run: |
           dotnet run --project src/DataFetcher/DataFetcher.csproj \
             -c Release --no-restore
+        working-directory: ${{ github.workspace }}
 
       # ── 5. Contar artigos e validar output ──────────────────────────────
       - name: 🔢 Validar artigos gerados
