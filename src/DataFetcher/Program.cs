@@ -42,16 +42,12 @@ Console.WriteLine($"  ↳ IDs já processados: {seenIds.Ids.Count}");
 Console.WriteLine($"  ↳ Artigos existentes: {existingArticles.Count}");
 Console.WriteLine();
 
-// --- Backfill detection ---
-// Backfill desde 01/04/2026 se ainda houver poucos artigos
-var backfillStart = new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc);
-bool isBackfill = existingArticles.Count < 30;
-int maxPerSource = isBackfill ? 10 : 5;
+// --- Fetch window: sempre desde 01/04/2026, seenIds evita reprocessamento ---
+var backfillStart  = new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc);
+int maxPerSource   = 25;   // máximo de traduções por fonte por execução
 
-if (isBackfill)
-    Console.WriteLine($"  ⚡ Modo BACKFILL ativo — buscando desde {backfillStart:dd/MM/yyyy}");
-else
-    Console.WriteLine($"  📅 Modo diário — buscando artigos recentes");
+Console.WriteLine($"  📅 Janela de busca: {backfillStart:dd/MM/yyyy} → hoje");
+Console.WriteLine($"  🔢 Máximo por fonte: {maxPerSource}");
 Console.WriteLine();
 
 var newArticles = new List<Article>();

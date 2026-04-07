@@ -13,7 +13,10 @@
       "Bash(git -C \"C:\\\\SiteNoticias\\\\ai-news-hub\\\\ai-news-hub\" diff --stat)",
       "Bash(git -C \"C:\\\\SiteNoticias\\\\ai-news-hub\\\\ai-news-hub\" status --short)",
       "Bash(git -C \"C:\\\\SiteNoticias\\\\ai-news-hub\\\\ai-news-hub\" diff HEAD -- src/DataFetcher/Program.cs src/DataFetcher/Services/GroqTranslatorService.cs .github/workflows/publish.yml)",
-      "Bash(git -C \"C:\\\\SiteNoticias\\\\ai-news-hub\\\\ai-news-hub\" config --list)"
+      "Bash(git -C \"C:\\\\SiteNoticias\\\\ai-news-hub\\\\ai-news-hub\" config --list)",
+      "Bash(curl -s \"https://huggingface.co/api/daily_papers?date=2026-04-07\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(f''''Total papers: {len\\(d\\)}''''\\); [print\\(f''''  - {p[paper][title][:70]} \\(upvotes: {p[paper].get\\(upvotes,0\\)}\\)''''\\) for p in d[:5]]\")",
+      "Bash(python3 -c \":*)"
     ]
   }
 }

@@ -16,8 +16,8 @@ public class HuggingFaceService(HttpClient http)
     public async Task<List<HuggingFacePaper>> FetchRecentAsync(int maxResults = 20) =>
         await FetchDayAsync(DateTime.UtcNow.Date, maxResults);
 
-    /// Fetch all papers from startDate to today, ordered by upvotes descending
-    public async Task<List<HuggingFacePaper>> FetchFromDateAsync(DateTime startDate, int maxPerDay = 10)
+    /// Fetch ALL papers from startDate to today — sem limite por dia, seenIds faz o dedup
+    public async Task<List<HuggingFacePaper>> FetchFromDateAsync(DateTime startDate)
     {
         var all = new List<HuggingFacePaper>();
         var today = DateTime.UtcNow.Date;
@@ -25,16 +25,18 @@ public class HuggingFaceService(HttpClient http)
         for (var date = startDate.Date; date <= today; date = date.AddDays(1))
         {
             Console.WriteLine($"    HuggingFace: buscando {date:dd/MM/yyyy}...");
-            var papers = await FetchDayAsync(date, maxPerDay);
+            var papers = await FetchDayAsync(date);
+            Console.WriteLine($"      → {papers.Count} papers disponíveis neste dia");
             all.AddRange(papers);
             if (date < today)
-                await Task.Delay(400); // respeitar rate limit entre dias
+                await Task.Delay(400);
         }
 
+        // Ordena por upvotes para priorizar os mais relevantes
         return all.OrderByDescending(p => p.Upvotes).ToList();
     }
 
-    private async Task<List<HuggingFacePaper>> FetchDayAsync(DateTime date, int maxResults)
+    private async Task<List<HuggingFacePaper>> FetchDayAsync(DateTime date)
     {
         try
         {
@@ -52,12 +54,12 @@ public class HuggingFaceService(HttpClient http)
             var json = await resp.Content.ReadAsStringAsync();
             var items = JsonSerializer.Deserialize<List<HfDailyResponse>>(json, JsonOptions) ?? [];
 
+            // Retorna TODOS os papers do dia — sem Take() — deixa o Program.cs controlar o limite
             return items
                 .Select(i => i.Paper)
-                .Where(p => p is not null && !string.IsNullOrWhiteSpace(p.Summary) && p.Summary.Length > 80)
+                .Where(p => p is not null && !string.IsNullOrWhiteSpace(p.Summary) && p.Summary.Length > 60)
                 .Cast<HuggingFacePaper>()
                 .OrderByDescending(p => p.Upvotes)
-                .Take(maxResults)
                 .ToList();
         }
         catch (Exception ex)
