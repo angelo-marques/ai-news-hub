@@ -1,53 +1,193 @@
 @page "/"
 @inject ArticleService ArticleService
+@inject IJSRuntime JS
 
-<PageTitle>Hub IA Brasil — Últimas Pesquisas em Inteligência Artificial</PageTitle>
+<PageTitle>Hub IA Brasil — Tecnologia & Inteligência Artificial</PageTitle>
 
-<div class="site-wrapper">
+<!-- ══ TOP BAR ══ -->
+<div class="topbar">
+    <div class="topbar-inner">
+        <span class="topbar-date">@DateTime.Now.ToString("dddd, dd 'de' MMMM 'de' yyyy")</span>
+        <div class="topbar-links">
+            <a href="https://arxiv.org/list/cs.AI/recent" target="_blank">arXiv</a>
+            <span class="topbar-sep">|</span>
+            <a href="https://paperswithcode.com" target="_blank">Papers with Code</a>
+        </div>
+    </div>
+</div>
 
-    <!-- ════════════════ HEADER ════════════════ -->
-    <header class="site-header">
-        <div class="header-inner">
-            <a class="logo" href="/">
-                <span class="logo-diamond">◆</span>
-                <div>
-                    <div class="logo-name">Hub IA Brasil</div>
-                    <div class="logo-sub">Curadoria de Pesquisas em Inteligência Artificial</div>
-                </div>
-            </a>
-            <div class="header-right">
-                @if (lastUpdated.HasValue)
-                {
-                    <span class="last-update">
-                        Atualizado @lastUpdated.Value.ToLocalTime().ToString("dd/MM HH:mm")
-                    </span>
-                }
-                <div class="header-links">
-                    <a href="https://arxiv.org/list/cs.AI/recent" target="_blank" class="header-link">arXiv</a>
-                    <a href="https://paperswithcode.com" target="_blank" class="header-link">Papers w/ Code</a>
+<!-- ══ HEADER ══ -->
+<header class="site-header">
+    <div class="header-inner">
+        <a href="/" class="logo">
+            <span class="logo-mark">◆</span>
+            <div>
+                <div class="logo-name">Hub IA Brasil</div>
+                <div class="logo-tagline">Tecnologia & Inteligência Artificial</div>
+            </div>
+        </a>
+
+        <nav class="main-nav">
+            <button class="nav-item @(activeFilter == "all"   ? "nav-item--active" : "")"
+                    @onclick='() => SetFilter("all")'>Início</button>
+            <button class="nav-item @(activeFilter == "arxiv" ? "nav-item--active" : "")"
+                    @onclick='() => SetFilter("arxiv")'>Pesquisa</button>
+            <button class="nav-item @(activeFilter == "pwc"   ? "nav-item--active" : "")"
+                    @onclick='() => SetFilter("pwc")'>Projetos</button>
+        </nav>
+
+        <div class="header-actions">
+            <div class="search-wrap">
+                <span class="search-icon">⌕</span>
+                <input class="search-input" type="search" placeholder="Buscar notícias..."
+                       @bind="searchQuery" @bind:event="oninput" />
+            </div>
+            <button class="theme-btn" @onclick="ToggleTheme" title="Alternar tema">
+                @(isDark ? "☀" : "🌙")
+            </button>
+            <button class="menu-btn" @onclick="() => mobileMenuOpen = !mobileMenuOpen">☰</button>
+        </div>
+    </div>
+
+    @if (mobileMenuOpen)
+    {
+        <div class="mobile-nav">
+            <button @onclick='() => { SetFilter("all");   mobileMenuOpen = false; }'>Início</button>
+            <button @onclick='() => { SetFilter("arxiv"); mobileMenuOpen = false; }'>Pesquisa</button>
+            <button @onclick='() => { SetFilter("pwc");   mobileMenuOpen = false; }'>Projetos</button>
+        </div>
+    }
+</header>
+
+<!-- ══ TICKER ══ -->
+@if (allArticles.Any())
+{
+    var tickerItems = allArticles.Take(6).ToList();
+    <div class="ticker-wrap">
+        <span class="ticker-label">DESTAQUE</span>
+        <div class="ticker-track">
+            @* Duplicate for seamless loop *@
+            @foreach (var a in tickerItems)
+            {
+                <span class="ticker-item" @onclick="() => OpenArticle(a)">@a.TitlePt</span>
+                <span class="ticker-sep">◆</span>
+            }
+            @foreach (var a in tickerItems)
+            {
+                <span class="ticker-item" @onclick="() => OpenArticle(a)">@a.TitlePt</span>
+                <span class="ticker-sep">◆</span>
+            }
+        </div>
+    </div>
+}
+
+<!-- ══ MAIN ══ -->
+<main class="main">
+
+    @if (isLoading)
+    {
+        <div class="state-center">
+            <div class="splash-loader" style="justify-content:center;">
+                <span></span><span></span><span></span>
+            </div>
+            <p class="state-text" style="margin-top:16px;">Carregando notícias...</p>
+        </div>
+    }
+    else if (errorMsg is not null)
+    {
+        <div class="state-center">
+            <p class="state-error">⚠ @errorMsg</p>
+        </div>
+    }
+    else if (!filtered.Any())
+    {
+        <div class="state-center">
+            <p class="state-text">Nenhum artigo encontrado.</p>
+            <button class="btn-clear" @onclick="ClearFilters">Limpar filtros</button>
+        </div>
+    }
+    else
+    {
+        var featured   = filtered.First();
+        var secondary  = filtered.Skip(1).Take(2).ToList();
+        var gridItems  = filtered.Skip(3).ToList();
+
+        <!-- ══ HERO ══ -->
+        <section class="hero">
+            <div class="hero-inner">
+
+                <!-- Featured -->
+                <article class="hero-featured" @onclick="() => OpenArticle(featured)">
+                    <div class="hero-img-wrap">
+                        <img src="@GetImageUrl(featured.Id)" alt="@featured.TitlePt"
+                             class="hero-img" loading="lazy" />
+                        <div class="hero-img-overlay"></div>
+                        <div class="hero-badge-wrap">
+                            <SourceBadge Source="@featured.Source" />
+                        </div>
+                    </div>
+                    <div class="hero-content">
+                        <div class="hero-eyebrow">
+                            @if (IsNew(featured))
+                            {
+                                <span class="badge badge-new">NOVO</span>
+                            }
+                            <span class="meta-date">@featured.PublishedAt.ToString("dd MMM yyyy")</span>
+                            <span class="meta-sep">·</span>
+                            <span class="meta-authors">@FormatAuthors(featured.Authors)</span>
+                        </div>
+                        <h2 class="hero-title">@featured.TitlePt</h2>
+                        <div class="hero-tags">
+                            @foreach (var tag in featured.Tags.Take(4))
+                            {
+                                <span class="tag" @onclick:stopPropagation
+                                      @onclick="() => SetTag(tag)">#@tag</span>
+                            }
+                        </div>
+                        <span class="hero-read-more">Ler análise completa →</span>
+                    </div>
+                </article>
+
+                <!-- Secondary -->
+                <div class="hero-secondary">
+                    @foreach (var art in secondary)
+                    {
+                        <article class="hero-side" @onclick="() => OpenArticle(art)">
+                            <div class="side-img-wrap">
+                                <img src="@GetImageUrl(art.Id)" alt="@art.TitlePt"
+                                     class="side-img" loading="lazy" />
+                            </div>
+                            <div class="side-content">
+                                <div class="side-eyebrow">
+                                    <SourceBadge Source="@art.Source" />
+                                    @if (IsNew(art))
+                                    {
+                                        <span class="badge badge-new">NOVO</span>
+                                    }
+                                </div>
+                                <h3 class="side-title">@art.TitlePt</h3>
+                                <span class="side-meta">@art.PublishedAt.ToString("dd/MM/yyyy") · @FormatAuthors(art.Authors)</span>
+                            </div>
+                        </article>
+                    }
                 </div>
             </div>
-        </div>
-    </header>
+        </section>
 
-    <!-- ════════════════ FILTER BAR ════════════════ -->
-    <div class="filter-bar">
-        <div class="filter-inner">
+        <!-- ══ FILTER BAR ══ -->
+        <div class="filter-bar">
             <div class="filter-pills">
-                <button class="pill @(activeFilter == "all" ? "pill--active" : "")"
+                <button class="pill @(activeFilter == "all"   ? "pill--active" : "")"
                         @onclick='() => SetFilter("all")'>
-                    Todos
-                    <span class="pill-count">@allArticles.Count</span>
+                    Todos <span class="pill-count">@allArticles.Count</span>
                 </button>
                 <button class="pill @(activeFilter == "arxiv" ? "pill--active" : "")"
                         @onclick='() => SetFilter("arxiv")'>
-                    arXiv
-                    <span class="pill-count">@allArticles.Count(a => a.Source == "arXiv")</span>
+                    arXiv <span class="pill-count">@allArticles.Count(a => a.Source == "arXiv")</span>
                 </button>
-                <button class="pill @(activeFilter == "pwc" ? "pill--active" : "")"
+                <button class="pill @(activeFilter == "pwc"   ? "pill--active" : "")"
                         @onclick='() => SetFilter("pwc")'>
-                    Papers with Code
-                    <span class="pill-count">@allArticles.Count(a => a.Source == "Papers with Code")</span>
+                    Papers with Code <span class="pill-count">@allArticles.Count(a => a.Source == "Papers with Code")</span>
                 </button>
                 @if (!string.IsNullOrEmpty(activeTag))
                 {
@@ -56,194 +196,168 @@
                     </button>
                 }
             </div>
-            <div class="search-wrap">
-                <span class="search-icon">⌕</span>
-                <input class="search-input"
-                       type="search"
-                       placeholder="Pesquisar artigos..."
-                       @bind="searchQuery"
-                       @bind:event="oninput" />
+            <div class="filter-search-wrap">
+                <span class="filter-search-icon">⌕</span>
+                <input class="filter-search" type="search" placeholder="Filtrar artigos..."
+                       @bind="searchQuery" @bind:event="oninput" />
+            </div>
+        </div>
+
+        <!-- ══ GRID ══ -->
+        @if (gridItems.Any())
+        {
+            <h2 class="section-heading">Mais Notícias</h2>
+            <div class="grid">
+                @foreach (var art in gridItems)
+                {
+                    <article class="card" @onclick="() => OpenArticle(art)">
+                        <div class="card-img-wrap">
+                            <img src="@GetImageUrl(art.Id)" alt="@art.TitlePt"
+                                 class="card-img" loading="lazy" />
+                        </div>
+                        <div class="card-body">
+                            <div class="card-eyebrow">
+                                <SourceBadge Source="@art.Source" />
+                                @if (IsNew(art))
+                                {
+                                    <span class="badge badge-new">NOVO</span>
+                                }
+                            </div>
+                            <h3 class="card-title">@art.TitlePt</h3>
+                            <div class="card-meta">
+                                <span>@art.PublishedAt.ToString("dd/MM/yyyy")</span>
+                                <span class="meta-sep">·</span>
+                                <span>@FormatAuthors(art.Authors)</span>
+                            </div>
+                            <div class="card-tags">
+                                @foreach (var tag in art.Tags.Take(3))
+                                {
+                                    <span class="tag" @onclick:stopPropagation
+                                          @onclick="() => SetTag(tag)">#@tag</span>
+                                }
+                            </div>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    }
+</main>
+
+<!-- ══ ARTICLE MODAL ══ -->
+@if (selectedArticle is not null)
+{
+    <div class="modal-overlay" @onclick="CloseArticle">
+        <div class="modal" @onclick:stopPropagation>
+            <button class="modal-close" @onclick="CloseArticle">✕</button>
+
+            <div class="modal-img-wrap">
+                <img src="@GetImageUrl(selectedArticle.Id)" alt="@selectedArticle.TitlePt"
+                     class="modal-img" />
+            </div>
+
+            <div class="modal-body">
+                <div class="modal-eyebrow">
+                    <SourceBadge Source="@selectedArticle.Source" />
+                    @if (IsNew(selectedArticle))
+                    {
+                        <span class="badge badge-new">NOVO</span>
+                    }
+                </div>
+
+                <h1 class="modal-title">@selectedArticle.TitlePt</h1>
+
+                <div class="modal-meta">
+                    <span class="meta-date">
+                        @selectedArticle.PublishedAt.ToString("dd 'de' MMMM 'de' yyyy")
+                    </span>
+                    <span class="modal-meta-sep">·</span>
+                    <span>@FormatAuthors(selectedArticle.Authors)</span>
+                </div>
+
+                <div class="modal-tags">
+                    @foreach (var tag in selectedArticle.Tags)
+                    {
+                        <span class="tag" @onclick="() => { SetTag(tag); CloseArticle(); }">#@tag</span>
+                    }
+                </div>
+
+                <div class="modal-content">
+                    @((MarkupString)selectedArticle.NewsHtml)
+                </div>
+
+                <div class="modal-author-section">
+                    <div class="author-card">
+                        <span class="author-label">Redação</span>
+                        <span class="author-name">Angelo Marques de Oliveira Silva</span>
+                        <span class="author-role">Hub IA Brasil — Tecnologia & Inteligência Artificial</span>
+                    </div>
+                    <div class="modal-actions">
+                        <a href="@selectedArticle.PaperUrl" target="_blank" class="btn-action btn-paper">
+                            ↗ Artigo Original
+                        </a>
+                        @if (!string.IsNullOrEmpty(selectedArticle.CodeUrl))
+                        {
+                            <a href="@selectedArticle.CodeUrl" target="_blank" class="btn-action btn-code">
+                                { } Código
+                            </a>
+                        }
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+}
 
-    <!-- ════════════════ MAIN CONTENT ════════════════ -->
-    <main class="main">
-
-        @if (isLoading)
-        {
-            <div class="state-center">
-                <div class="spinner"></div>
-                <p class="state-text">Carregando pesquisas...</p>
-            </div>
-        }
-        else if (errorMsg is not null)
-        {
-            <div class="state-center">
-                <p class="state-error">⚠ @errorMsg</p>
-            </div>
-        }
-        else if (!filtered.Any())
-        {
-            <div class="state-center">
-                <p class="state-text">Nenhum artigo encontrado com os filtros selecionados.</p>
-                <button class="btn-clear" @onclick="ClearFilters">Limpar filtros</button>
-            </div>
-        }
-        else
-        {
-            var featured = filtered.First();
-            var rest = filtered.Skip(1).ToList();
-
-            <!-- FEATURED -->
-            <article class="featured @(expandedId == featured.Id ? "featured--open" : "")"
-                     @onclick="() => ToggleArticle(featured.Id)">
-                <div class="featured-inner">
-                    <div class="featured-meta">
-                        <SourceBadge Source="@featured.Source" />
-                        @if (IsNew(featured))
-                        {
-                            <span class="badge badge-new">NOVO</span>
-                        }
-                        <span class="meta-date">@featured.PublishedAt.ToString("dd MMM yyyy")</span>
-                        <span class="meta-sep">·</span>
-                        <span class="meta-authors">
-                            @FormatAuthors(featured.Authors)
-                        </span>
-                    </div>
-
-                    <h2 class="featured-title">@featured.TitlePt</h2>
-
-                    <div class="featured-tags">
-                        @foreach (var tag in featured.Tags.Take(5))
-                        {
-                            <button class="tag" @onclick:stopPropagation
-                                    @onclick="() => SetTag(tag)">#@tag</button>
-                        }
-                    </div>
-
-                    @if (expandedId == featured.Id)
-                    {
-                        <div class="article-body">
-                            @((MarkupString)featured.NewsHtml)
-                        </div>
-                        <div class="article-footer">
-                            <div class="article-credit">
-                                <span class="credit-label">Redação</span>
-                                <strong>Angelo Marques de Oliveira Silva</strong>
-                            </div>
-                            <div class="article-actions">
-                                <a href="@featured.PaperUrl" target="_blank" class="btn-action btn-paper">
-                                    ↗ Paper Original
-                                </a>
-                                @if (!string.IsNullOrEmpty(featured.CodeUrl))
-                                {
-                                    <a href="@featured.CodeUrl" target="_blank" class="btn-action btn-code">
-                                        { } Código
-                                    </a>
-                                }
-                            </div>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="featured-cta">Clique para ler a análise completa →</div>
-                    }
-                </div>
-            </article>
-
-            <!-- GRID -->
-            @if (rest.Any())
-            {
-                <div class="grid">
-                    @foreach (var article in rest)
-                    {
-                        var isOpen = expandedId == article.Id;
-                        <article class="card @(isOpen ? "card--open" : "")"
-                                 @onclick="() => ToggleArticle(article.Id)">
-                            <div class="card-inner">
-                                <div class="card-meta">
-                                    <SourceBadge Source="@article.Source" />
-                                    @if (IsNew(article))
-                                    {
-                                        <span class="badge badge-new">NOVO</span>
-                                    }
-                                </div>
-
-                                <h3 class="card-title">@article.TitlePt</h3>
-
-                                <div class="card-info">
-                                    <span class="meta-date">@article.PublishedAt.ToString("dd/MM/yyyy")</span>
-                                    <span class="meta-sep">·</span>
-                                    <span class="meta-authors">@FormatAuthors(article.Authors)</span>
-                                </div>
-
-                                <div class="card-tags">
-                                    @foreach (var tag in article.Tags.Take(3))
-                                    {
-                                        <button class="tag" @onclick:stopPropagation
-                                                @onclick="() => SetTag(tag)">#@tag</button>
-                                    }
-                                </div>
-
-                                @if (isOpen)
-                                {
-                                    <div class="article-body">
-                                        @((MarkupString)article.NewsHtml)
-                                    </div>
-                                    <div class="article-footer">
-                                        <div class="article-credit">
-                                            <span class="credit-label">Redação</span>
-                                            <strong>Angelo Marques de Oliveira Silva</strong>
-                                        </div>
-                                        <div class="article-actions">
-                                            <a href="@article.PaperUrl" target="_blank"
-                                               class="btn-action btn-paper">↗ Paper Original</a>
-                                            @if (!string.IsNullOrEmpty(article.CodeUrl))
-                                            {
-                                                <a href="@article.CodeUrl" target="_blank"
-                                                   class="btn-action btn-code">{ } Código</a>
-                                            }
-                                        </div>
-                                    </div>
-                                }
-                            </div>
-                        </article>
-                    }
-                </div>
-            }
-        }
-    </main>
-
-    <!-- ════════════════ FOOTER ════════════════ -->
-    <footer class="site-footer">
-        <div class="footer-inner">
-            <div class="footer-brand">
-                <span class="logo-diamond">◆</span> Hub IA Brasil
-            </div>
+<!-- ══ FOOTER ══ -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-brand-name"><span>◆</span> Hub IA Brasil</div>
             <p class="footer-desc">
-                Curadoria automática de pesquisas em inteligência artificial.<br />
-                Redação: <strong>Angelo Marques de Oliveira Silva</strong><br />
-                Fontes: <a href="https://arxiv.org/list/cs.AI/recent" target="_blank">arXiv cs.AI/LG/CL/CV</a>
-                &amp; <a href="https://paperswithcode.com" target="_blank">Papers with Code</a>
-            </p>
-            <p class="footer-note">
-                Atualizado automaticamente 3× ao dia via GitHub Actions
+                Cobertura sobre pesquisas e avanços em inteligência artificial.<br />
+                Redação: Angelo Marques de Oliveira Silva.
             </p>
         </div>
-    </footer>
+        <div>
+            <div class="footer-heading">Fontes</div>
+            <div class="footer-links">
+                <a href="https://arxiv.org/list/cs.AI/recent" target="_blank">arXiv — cs.AI / cs.LG / cs.CL / cs.CV</a>
+                <a href="https://paperswithcode.com" target="_blank">Papers with Code</a>
+            </div>
+        </div>
+        <div>
+            <div class="footer-heading">Navegação</div>
+            <div class="footer-links">
+                <button style="text-align:left;padding:0;font-size:13px;color:var(--text-soft);"
+                        @onclick='() => SetFilter("all")'>Início</button>
+                <button style="text-align:left;padding:0;font-size:13px;color:var(--text-soft);"
+                        @onclick='() => SetFilter("arxiv")'>Pesquisa</button>
+                <button style="text-align:left;padding:0;font-size:13px;color:var(--text-soft);"
+                        @onclick='() => SetFilter("pwc")'>Projetos</button>
+            </div>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <span>© @DateTime.Now.Year Hub IA Brasil. Todos os direitos reservados.</span>
+        <span>Angelo Marques de Oliveira Silva</span>
+    </div>
+</footer>
 
-</div>
+<!-- Scroll to top -->
+<button class="scroll-top" @onclick="ScrollToTop" title="Voltar ao topo">↑</button>
 
 @code {
     private List<Article> allArticles = [];
-    private string activeFilter = "all";
-    private string activeTag    = string.Empty;
-    private string searchQuery  = string.Empty;
-    private string? expandedId;
-    private bool isLoading      = true;
+    private string  activeFilter   = "all";
+    private string  activeTag      = string.Empty;
+    private string  searchQuery    = string.Empty;
+    private bool    isLoading      = true;
+    private bool    isDark         = true;
+    private bool    mobileMenuOpen = false;
     private string? errorMsg;
-    private DateTime? lastUpdated;
+    private Article? selectedArticle;
+    private bool _themeInit = false;
 
     private IEnumerable<Article> filtered => allArticles
         .Where(a => activeFilter switch
@@ -252,10 +366,10 @@
             "pwc"   => a.Source == "Papers with Code",
             _       => true
         })
-        .Where(a => string.IsNullOrEmpty(activeTag)    || a.Tags.Contains(activeTag, StringComparer.OrdinalIgnoreCase))
-        .Where(a => string.IsNullOrEmpty(searchQuery)  ||
+        .Where(a => string.IsNullOrEmpty(activeTag)   || a.Tags.Contains(activeTag, StringComparer.OrdinalIgnoreCase))
+        .Where(a => string.IsNullOrEmpty(searchQuery) ||
                     a.TitlePt.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
-                    a.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)   ||
+                    a.Title.Contains(searchQuery,   StringComparison.OrdinalIgnoreCase) ||
                     a.Tags.Any(t => t.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)));
 
     protected override async Task OnInitializedAsync()
@@ -263,7 +377,6 @@
         try
         {
             allArticles = await ArticleService.LoadArticlesAsync();
-            lastUpdated = allArticles.Any() ? allArticles.Max(a => a.FetchedAt) : null;
         }
         catch (Exception ex)
         {
@@ -275,27 +388,46 @@
         }
     }
 
-    private void SetFilter(string filter)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        activeFilter = filter;
-        expandedId   = null;
+        if (firstRender && !_themeInit)
+        {
+            _themeInit = true;
+            var theme = await JS.InvokeAsync<string>("themeManager.init");
+            isDark = theme != "light";
+            StateHasChanged();
+        }
     }
 
-    private void SetTag(string tag)
+    private async Task ToggleTheme()
     {
-        activeTag  = tag;
-        expandedId = null;
+        isDark = !isDark;
+        await JS.InvokeVoidAsync("themeManager.set", isDark ? "dark" : "light");
     }
 
-    private void ToggleArticle(string id) =>
-        expandedId = expandedId == id ? null : id;
+    private async Task ScrollToTop() =>
+        await JS.InvokeVoidAsync("scrollToTop");
+
+    private void OpenArticle(Article a)
+    {
+        selectedArticle = a;
+        _ = JS.InvokeVoidAsync("lockBodyScroll", true);
+    }
+
+    private void CloseArticle()
+    {
+        selectedArticle = null;
+        _ = JS.InvokeVoidAsync("lockBodyScroll", false);
+    }
+
+    private void SetFilter(string f) { activeFilter = f; }
+    private void SetTag(string tag)  { activeTag = tag; }
 
     private void ClearFilters()
     {
-        activeFilter  = "all";
-        activeTag     = string.Empty;
-        searchQuery   = string.Empty;
-        expandedId    = null;
+        activeFilter = "all";
+        activeTag    = string.Empty;
+        searchQuery  = string.Empty;
     }
 
     private static bool IsNew(Article a) =>
@@ -305,4 +437,10 @@
         authors.Length == 0 ? "" :
         authors.Length <= 2 ? string.Join(", ", authors) :
         $"{authors[0]} et al.";
+
+    private static string GetImageUrl(string articleId)
+    {
+        var seed = (uint)articleId.GetHashCode() % 900 + 100;
+        return $"https://picsum.photos/seed/{seed}/800/450";
+    }
 }

@@ -1,22 +1,51 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Hub IA Brasil — Curadoria automática de pesquisas em inteligência artificial traduzidas para o português do Brasil." />
+    <meta name="description" content="Hub IA Brasil — Cobertura jornalística sobre tecnologia e inteligência artificial." />
     <meta name="author" content="Angelo Marques de Oliveira Silva" />
     <meta property="og:title" content="Hub IA Brasil" />
-    <meta property="og:description" content="Últimas pesquisas em IA traduzidas para PT-BR — arXiv e Papers with Code" />
+    <meta property="og:description" content="Cobertura sobre pesquisas em inteligência artificial — arXiv e Papers with Code" />
     <meta property="og:type" content="website" />
     <title>Hub IA Brasil</title>
     <base href="/" />
 
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
     <link rel="stylesheet" href="css/app.css" />
+
+    <script>
+        window.themeManager = {
+            get: function () {
+                return localStorage.getItem('hub-ia-theme') || 'dark';
+            },
+            set: function (theme) {
+                localStorage.setItem('hub-ia-theme', theme);
+                document.documentElement.setAttribute('data-theme', theme);
+            },
+            init: function () {
+                var theme = localStorage.getItem('hub-ia-theme') || 'dark';
+                document.documentElement.setAttribute('data-theme', theme);
+                return theme;
+            }
+        };
+        // Apply immediately to avoid flash
+        (function () {
+            var t = localStorage.getItem('hub-ia-theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+
+        window.scrollToTop = function () {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.lockBodyScroll = function (lock) {
+            document.body.style.overflow = lock ? 'hidden' : '';
+        };
+    </script>
 </head>
 <body>
     <div id="app">
@@ -30,8 +59,7 @@
     </div>
 
     <div id="blazor-error-ui">
-        Ocorreu um erro.
-        <a href="" class="reload">Recarregar</a>
+        Ocorreu um erro. <a href="" class="reload">Recarregar</a>
         <a class="dismiss">✕</a>
     </div>
 
