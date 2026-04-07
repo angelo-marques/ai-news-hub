@@ -45,7 +45,7 @@ Console.WriteLine();
 // --- Fetch window: sempre desde 01/04/2026, seenIds evita reprocessamento ---
 bool isBackfill = true;
 var backfillStart  = new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc);
-int maxPerSource   = 25;   // máximo de traduções por fonte por execução
+int maxPerSource   = 100;   // máximo de traduções por fonte por execução
 
 Console.WriteLine($"  📅 Janela de busca: {backfillStart:dd/MM/yyyy} → hoje");
 Console.WriteLine($"  🔢 Máximo por fonte: {maxPerSource}");
