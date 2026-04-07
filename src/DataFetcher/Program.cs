@@ -30,7 +30,7 @@ var arxivService   = new ArxivService(httpClient);
 var pwcService     = new PapersWithCodeService(httpClient);
 var hfService      = new HuggingFaceService(httpClient);
 var ssService      = new SemanticScholarService(httpClient);
-var translator     = new GroqTranslatorService(httpClient, apiKey);
+var translator     = new AiTranslatorService(httpClient, apiKey);
 var storage        = new ArticleStorageService();
 
 // --- Load State ---
