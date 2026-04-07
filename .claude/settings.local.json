@@ -7,7 +7,12 @@
       "Bash(where gh:*)",
       "Read(//c//**)",
       "Read(//c/Users/marqu/AppData/Local/Programs/**)",
-      "Bash(git -C \"C:\\\\SiteNoticias\\\\ai-news-hub\\\\ai-news-hub\" remote -v)"
+      "Bash(git -C \"C:\\\\SiteNoticias\\\\ai-news-hub\\\\ai-news-hub\" remote -v)",
+      "Bash(git -C \"C:\\\\SiteNoticias\\\\ai-news-hub\\\\ai-news-hub\" init)",
+      "Bash(git -C \"C:\\\\SiteNoticias\\\\ai-news-hub\\\\ai-news-hub\" status)",
+      "Bash(git -C \"C:\\\\SiteNoticias\\\\ai-news-hub\\\\ai-news-hub\" diff --stat)",
+      "Bash(git -C \"C:\\\\SiteNoticias\\\\ai-news-hub\\\\ai-news-hub\" status --short)",
+      "Bash(git -C \"C:\\\\SiteNoticias\\\\ai-news-hub\\\\ai-news-hub\" diff HEAD -- src/DataFetcher/Program.cs src/DataFetcher/Services/GroqTranslatorService.cs .github/workflows/publish.yml)"
     ]
   }
 }
