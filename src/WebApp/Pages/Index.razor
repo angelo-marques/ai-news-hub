@@ -126,6 +126,7 @@
                 <article class="hero-featured" @onclick="() => OpenArticle(featured)">
                     <div class="hero-img-wrap">
                         <img src="@GetImageUrl(featured.Id)" alt="@featured.TitlePt"
+                             onerror="this.onerror=null; this.src='@GetPicsumUrl(featured.Id)';"
                              class="hero-img" loading="lazy" />
                         <div class="hero-img-overlay"></div>
                         <div class="hero-badge-wrap">
@@ -161,6 +162,7 @@
                         <article class="hero-side" @onclick="() => OpenArticle(art)">
                             <div class="side-img-wrap">
                                 <img src="@GetImageUrl(art.Id)" alt="@art.TitlePt"
+                                     onerror="this.onerror=null; this.src='@GetPicsumUrl(art.Id)';"
                                      class="side-img" loading="lazy" />
                             </div>
                             <div class="side-content">
@@ -245,6 +247,7 @@
                     <article class="card" @onclick="() => OpenArticle(art)">
                         <div class="card-img-wrap">
                             <img src="@GetImageUrl(art.Id)" alt="@art.TitlePt"
+                                 onerror="this.onerror=null; this.src='@GetPicsumUrl(art.Id)';"
                                  class="card-img" loading="lazy" />
                         </div>
                         <div class="card-body">
@@ -285,6 +288,7 @@
 
             <div class="modal-img-wrap">
                 <img src="@GetImageUrl(selectedArticle.Id)" alt="@selectedArticle.TitlePt"
+                     onerror="this.onerror=null; this.src='@GetPicsumUrl(selectedArticle.Id)';"
                      class="modal-img" />
             </div>
 
@@ -554,9 +558,20 @@
         authors.Length <= 2 ? string.Join(", ", authors) :
         $"{authors[0]} et al.";
 
-    private static string GetImageUrl(string articleId)
+    private static string GetPicsumUrl(string articleId)
     {
         var seed = (uint)articleId.GetHashCode() % 900 + 100;
         return $"https://picsum.photos/seed/{seed}/800/450";
+    }
+
+    private static string GetImageUrl(string articleId)
+    {
+        if (articleId.StartsWith("arxiv:") || articleId.StartsWith("hf:"))
+        {
+            var rawId = articleId.Split(':', 2)[1];
+            // Usa o framework ar5iv para puxar a primeira figura/imagem real compilada do paper
+            return $"https://ar5iv.labs.arxiv.org/html/{rawId}/assets/x1.png";
+        }
+        return GetPicsumUrl(articleId);
     }
 }
