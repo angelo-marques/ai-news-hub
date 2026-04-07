@@ -182,38 +182,56 @@
 
         <!-- ══ FILTER BAR ══ -->
         <div class="filter-bar">
-            <div class="filter-pills">
-                <button class="pill @(activeFilter == "all"   ? "pill--active" : "")"
-                        @onclick='() => SetFilter("all")'>
-                    Todos <span class="pill-count">@allArticles.Count</span>
-                </button>
-                <button class="pill @(activeFilter == "arxiv" ? "pill--active" : "")"
-                        @onclick='() => SetFilter("arxiv")'>
-                    arXiv <span class="pill-count">@allArticles.Count(a => a.Source == "arXiv")</span>
-                </button>
-                <button class="pill @(activeFilter == "pwc"   ? "pill--active" : "")"
-                        @onclick='() => SetFilter("pwc")'>
-                    Papers with Code <span class="pill-count">@allArticles.Count(a => a.Source == "Papers with Code")</span>
-                </button>
-                <button class="pill @(activeFilter == "hf"    ? "pill--active" : "")"
-                        @onclick='() => SetFilter("hf")'>
-                    Hugging Face <span class="pill-count">@allArticles.Count(a => a.Source == "Hugging Face")</span>
-                </button>
-                <button class="pill @(activeFilter == "ss"    ? "pill--active" : "")"
-                        @onclick='() => SetFilter("ss")'>
-                    Semantic Scholar <span class="pill-count">@allArticles.Count(a => a.Source == "Semantic Scholar")</span>
-                </button>
-                @if (!string.IsNullOrEmpty(activeTag))
-                {
-                    <button class="pill pill--tag pill--active" @onclick="() => activeTag = string.Empty">
-                        #@activeTag <span class="pill-remove">✕</span>
+            <div class="filter-row">
+                <div class="filter-pills">
+                    <button class="pill @(activeFilter == "all"   ? "pill--active" : "")"
+                            @onclick='() => SetFilter("all")'>
+                        Todos <span class="pill-count">@allArticles.Count</span>
                     </button>
-                }
+                    <button class="pill @(activeFilter == "arxiv" ? "pill--active" : "")"
+                            @onclick='() => SetFilter("arxiv")'>
+                        arXiv <span class="pill-count">@allArticles.Count(a => a.Source == "arXiv")</span>
+                    </button>
+                    <button class="pill @(activeFilter == "pwc"   ? "pill--active" : "")"
+                            @onclick='() => SetFilter("pwc")'>
+                        Papers w/ Code <span class="pill-count">@allArticles.Count(a => a.Source == "Papers with Code")</span>
+                    </button>
+                    <button class="pill @(activeFilter == "hf"    ? "pill--active" : "")"
+                            @onclick='() => SetFilter("hf")'>
+                        Hugging Face <span class="pill-count">@allArticles.Count(a => a.Source == "Hugging Face")</span>
+                    </button>
+                    <button class="pill @(activeFilter == "ss"    ? "pill--active" : "")"
+                            @onclick='() => SetFilter("ss")'>
+                        Semantic Scholar <span class="pill-count">@allArticles.Count(a => a.Source == "Semantic Scholar")</span>
+                    </button>
+                    @if (!string.IsNullOrEmpty(activeTag))
+                    {
+                        <button class="pill pill--tag pill--active" @onclick="() => activeTag = string.Empty">
+                            #@activeTag <span class="pill-remove">✕</span>
+                        </button>
+                    }
+                </div>
+                <div class="filter-search-wrap">
+                    <span class="filter-search-icon">⌕</span>
+                    <input class="filter-search" type="search" placeholder="Busca inteligente..."
+                           @bind="searchQuery" @bind:event="oninput" />
+                </div>
             </div>
-            <div class="filter-search-wrap">
-                <span class="filter-search-icon">⌕</span>
-                <input class="filter-search" type="search" placeholder="Filtrar artigos..."
-                       @bind="searchQuery" @bind:event="oninput" />
+            <div class="filter-row filter-row--time">
+                <span class="filter-label">Período:</span>
+                <div class="time-pills">
+                    <button class="time-pill @(timeFilter == "today" ? "time-pill--active" : "")"
+                            @onclick='() => SetTime("today")'>Hoje</button>
+                    <button class="time-pill @(timeFilter == "week"  ? "time-pill--active" : "")"
+                            @onclick='() => SetTime("week")'>Esta semana</button>
+                    <button class="time-pill @(timeFilter == "month" ? "time-pill--active" : "")"
+                            @onclick='() => SetTime("month")'>Este mês</button>
+                    <button class="time-pill @(timeFilter == "all"   ? "time-pill--active" : "")"
+                            @onclick='() => SetTime("all")'>Todos</button>
+                </div>
+                <span class="filter-result-count">
+                    @filtered.Count() resultado@(filtered.Count() != 1 ? "s" : "")
+                </span>
             </div>
         </div>
 
@@ -323,38 +341,100 @@
     </div>
 }
 
+<!-- ══ TECH INFO SECTION ══ -->
+<section class="tech-section">
+    <div class="tech-inner">
+        <div class="tech-card">
+            <span class="tech-icon">⚡</span>
+            <div>
+                <div class="tech-title">Blazor WebAssembly</div>
+                <div class="tech-desc">Interface executada diretamente no navegador via WebAssembly — sem servidor, carregamento instantâneo e disponível offline.</div>
+            </div>
+        </div>
+        <div class="tech-card">
+            <span class="tech-icon">🔍</span>
+            <div>
+                <div class="tech-title">Busca Inteligente</div>
+                <div class="tech-desc">Pesquise por título em português ou inglês, palavras-chave e tags simultaneamente em todas as fontes com filtros por período e origem.</div>
+            </div>
+        </div>
+        <div class="tech-card">
+            <span class="tech-icon">📡</span>
+            <div>
+                <div class="tech-title">4 Fontes Científicas</div>
+                <div class="tech-desc">Cobertura de arXiv, Hugging Face Daily Papers, Papers with Code e Semantic Scholar — os principais repositórios internacionais de pesquisa em IA.</div>
+            </div>
+        </div>
+        <div class="tech-card">
+            <span class="tech-icon">🔄</span>
+            <div>
+                <div class="tech-title">Atualização Diária</div>
+                <div class="tech-desc">Conteúdo renovado três vezes ao dia com as publicações mais recentes e relevantes do ecossistema global de inteligência artificial.</div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- ══ FOOTER ══ -->
 <footer class="site-footer">
     <div class="footer-inner">
-        <div>
+        <div class="footer-col footer-col--brand">
             <div class="footer-brand-name"><span>◆</span> Hub IA Brasil</div>
             <p class="footer-desc">
-                Cobertura sobre pesquisas e avanços em inteligência artificial.<br />
-                Redação: Angelo Marques de Oliveira Silva.
+                Portal de cobertura jornalística sobre pesquisas e avanços em inteligência artificial.<br />
+                Redação: <strong>Angelo Marques de Oliveira Silva</strong>.
             </p>
-        </div>
-        <div>
-            <div class="footer-heading">Fontes</div>
-            <div class="footer-links">
-                <a href="https://arxiv.org/list/cs.AI/recent" target="_blank">arXiv — cs.AI / cs.LG / cs.CL / cs.CV</a>
-                <a href="https://paperswithcode.com" target="_blank">Papers with Code</a>
+            <div class="footer-tech-badge">
+                <span>Powered by</span>
+                <strong>Blazor WebAssembly</strong>
+                <span>·</span>
+                <strong>.NET 9</strong>
             </div>
         </div>
-        <div>
+        <div class="footer-col">
+            <div class="footer-heading">Fontes de Pesquisa</div>
+            <div class="footer-links">
+                <a href="https://arxiv.org/list/cs.AI/recent" target="_blank">
+                    <span class="footer-link-badge badge-arxiv-sm">arXiv</span> cs.AI / cs.LG / cs.CL / cs.CV
+                </a>
+                <a href="https://huggingface.co/papers" target="_blank">
+                    <span class="footer-link-badge badge-hf-sm">HF</span> Hugging Face Daily Papers
+                </a>
+                <a href="https://paperswithcode.com" target="_blank">
+                    <span class="footer-link-badge badge-pwc-sm">PwC</span> Papers with Code
+                </a>
+                <a href="https://www.semanticscholar.org" target="_blank">
+                    <span class="footer-link-badge badge-ss-sm">SS</span> Semantic Scholar
+                </a>
+            </div>
+        </div>
+        <div class="footer-col">
             <div class="footer-heading">Navegação</div>
             <div class="footer-links">
-                <button style="text-align:left;padding:0;font-size:13px;color:var(--text-soft);"
-                        @onclick='() => SetFilter("all")'>Início</button>
-                <button style="text-align:left;padding:0;font-size:13px;color:var(--text-soft);"
-                        @onclick='() => SetFilter("arxiv")'>Pesquisa</button>
-                <button style="text-align:left;padding:0;font-size:13px;color:var(--text-soft);"
-                        @onclick='() => SetFilter("pwc")'>Projetos</button>
+                <button class="footer-nav-btn" @onclick='() => { SetFilter("all"); SetTime("all"); }'>Todas as notícias</button>
+                <button class="footer-nav-btn" @onclick='() => SetFilter("arxiv")'>arXiv</button>
+                <button class="footer-nav-btn" @onclick='() => SetFilter("hf")'>Hugging Face</button>
+                <button class="footer-nav-btn" @onclick='() => SetFilter("pwc")'>Papers with Code</button>
+                <button class="footer-nav-btn" @onclick='() => SetFilter("ss")'>Semantic Scholar</button>
+            </div>
+        </div>
+        <div class="footer-col">
+            <div class="footer-heading">Filtrar por Período</div>
+            <div class="footer-links">
+                <button class="footer-nav-btn" @onclick='() => SetTime("today")'>Hoje</button>
+                <button class="footer-nav-btn" @onclick='() => SetTime("week")'>Esta semana</button>
+                <button class="footer-nav-btn" @onclick='() => SetTime("month")'>Este mês</button>
+                <button class="footer-nav-btn" @onclick='() => SetTime("all")'>Todos os artigos</button>
             </div>
         </div>
     </div>
     <div class="footer-bottom">
         <span>© @DateTime.Now.Year Hub IA Brasil. Todos os direitos reservados.</span>
-        <span>Angelo Marques de Oliveira Silva</span>
+        <span>
+            <a href="https://angelo-marques.github.io/ai-news-hub/sitemap.xml" target="_blank" style="color:var(--text-muted);font-size:11px;">Sitemap</a>
+            <span style="margin:0 8px;color:var(--border);">|</span>
+            Angelo Marques de Oliveira Silva
+        </span>
     </div>
 </footer>
 
@@ -364,6 +444,7 @@
 @code {
     private List<Article> allArticles = [];
     private string  activeFilter   = "all";
+    private string  timeFilter     = "all";
     private string  activeTag      = string.Empty;
     private string  searchQuery    = string.Empty;
     private bool    isLoading      = true;
@@ -380,6 +461,13 @@
             "pwc"   => a.Source == "Papers with Code",
             "hf"    => a.Source == "Hugging Face",
             "ss"    => a.Source == "Semantic Scholar",
+            _       => true
+        })
+        .Where(a => timeFilter switch
+        {
+            "today" => a.PublishedAt.Date >= DateTime.UtcNow.Date.AddDays(-1),
+            "week"  => a.PublishedAt     >= DateTime.UtcNow.AddDays(-7),
+            "month" => a.PublishedAt     >= DateTime.UtcNow.AddDays(-30),
             _       => true
         })
         .Where(a => string.IsNullOrEmpty(activeTag)   || a.Tags.Contains(activeTag, StringComparer.OrdinalIgnoreCase))
@@ -437,11 +525,13 @@
     }
 
     private void SetFilter(string f) { activeFilter = f; }
+    private void SetTime(string t)   { timeFilter = t; }
     private void SetTag(string tag)  { activeTag = tag; }
 
     private void ClearFilters()
     {
         activeFilter = "all";
+        timeFilter   = "all";
         activeTag    = string.Empty;
         searchQuery  = string.Empty;
     }

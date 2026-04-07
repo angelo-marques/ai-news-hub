@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://angelo-marques.github.io/ai-news-hub/sitemap.xml

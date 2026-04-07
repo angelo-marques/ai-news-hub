@@ -3,48 +3,111 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Hub IA Brasil — Cobertura jornalística sobre tecnologia e inteligência artificial." />
-    <meta name="author" content="Angelo Marques de Oliveira Silva" />
-    <meta property="og:title" content="Hub IA Brasil" />
-    <meta property="og:description" content="Cobertura sobre pesquisas em inteligência artificial — arXiv e Papers with Code" />
-    <meta property="og:type" content="website" />
-    <title>Hub IA Brasil</title>
-    <base href="/" />
 
+    <!-- ── SEO Primary ── -->
+    <title>Hub IA Brasil — Cobertura em Inteligência Artificial e Tecnologia</title>
+    <meta name="description" content="Hub IA Brasil: cobertura jornalística diária sobre pesquisas e avanços em inteligência artificial. Artigos do arXiv, Hugging Face, Papers with Code e Semantic Scholar traduzidos para o português brasileiro." />
+    <meta name="keywords" content="inteligência artificial, machine learning, deep learning, IA, pesquisa, tecnologia, NLP, visão computacional, LLM, transformers, Brasil" />
+    <meta name="author" content="Angelo Marques de Oliveira Silva" />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <meta name="language" content="pt-BR" />
+    <link rel="canonical" href="https://angelo-marques.github.io/ai-news-hub/" />
+
+    <!-- ── Open Graph ── -->
+    <meta property="og:type"        content="website" />
+    <meta property="og:site_name"   content="Hub IA Brasil" />
+    <meta property="og:title"       content="Hub IA Brasil — Cobertura em Inteligência Artificial" />
+    <meta property="og:description" content="Cobertura jornalística diária sobre pesquisas em IA: arXiv, Hugging Face, Papers with Code e Semantic Scholar em português do Brasil." />
+    <meta property="og:url"         content="https://angelo-marques.github.io/ai-news-hub/" />
+    <meta property="og:image"       content="https://angelo-marques.github.io/ai-news-hub/og-image.png" />
+    <meta property="og:locale"      content="pt_BR" />
+
+    <!-- ── Twitter Card ── -->
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:title"       content="Hub IA Brasil — Cobertura em Inteligência Artificial" />
+    <meta name="twitter:description" content="Cobertura jornalística diária sobre pesquisas em IA em português do Brasil." />
+    <meta name="twitter:image"       content="https://angelo-marques.github.io/ai-news-hub/og-image.png" />
+
+    <!-- ── JSON-LD Structured Data ── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "NewsMediaOrganization",
+          "@id": "https://angelo-marques.github.io/ai-news-hub/#organization",
+          "name": "Hub IA Brasil",
+          "url": "https://angelo-marques.github.io/ai-news-hub/",
+          "description": "Portal de cobertura jornalística sobre inteligência artificial e tecnologia em português do Brasil.",
+          "foundingDate": "2026",
+          "inLanguage": "pt-BR",
+          "founder": {
+            "@type": "Person",
+            "name": "Angelo Marques de Oliveira Silva"
+          },
+          "publishingPrinciples": "https://angelo-marques.github.io/ai-news-hub/",
+          "sameAs": [
+            "https://arxiv.org/list/cs.AI/recent",
+            "https://huggingface.co/papers",
+            "https://paperswithcode.com",
+            "https://www.semanticscholar.org"
+          ]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://angelo-marques.github.io/ai-news-hub/#website",
+          "url": "https://angelo-marques.github.io/ai-news-hub/",
+          "name": "Hub IA Brasil",
+          "description": "Cobertura jornalística diária sobre pesquisas em inteligência artificial.",
+          "publisher": { "@id": "https://angelo-marques.github.io/ai-news-hub/#organization" },
+          "inLanguage": "pt-BR",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://angelo-marques.github.io/ai-news-hub/?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Hub IA Brasil",
+              "item": "https://angelo-marques.github.io/ai-news-hub/"
+            }
+          ]
+        }
+      ]
+    }
+    </script>
+
+    <base href="/ai-news-hub/" />
+
+    <!-- ── Fonts ── -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
     <link rel="stylesheet" href="css/app.css" />
 
+    <!-- ── Theme: apply before render to avoid flash ── -->
     <script>
-        window.themeManager = {
-            get: function () {
-                return localStorage.getItem('hub-ia-theme') || 'dark';
-            },
-            set: function (theme) {
-                localStorage.setItem('hub-ia-theme', theme);
-                document.documentElement.setAttribute('data-theme', theme);
-            },
-            init: function () {
-                var theme = localStorage.getItem('hub-ia-theme') || 'dark';
-                document.documentElement.setAttribute('data-theme', theme);
-                return theme;
-            }
-        };
-        // Apply immediately to avoid flash
         (function () {
             var t = localStorage.getItem('hub-ia-theme') || 'dark';
             document.documentElement.setAttribute('data-theme', t);
         })();
 
-        window.scrollToTop = function () {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.themeManager = {
+            get:  function ()      { return localStorage.getItem('hub-ia-theme') || 'dark'; },
+            set:  function (theme) { localStorage.setItem('hub-ia-theme', theme); document.documentElement.setAttribute('data-theme', theme); },
+            init: function ()      { var t = localStorage.getItem('hub-ia-theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); return t; }
         };
-
-        window.lockBodyScroll = function (lock) {
-            document.body.style.overflow = lock ? 'hidden' : '';
-        };
+        window.scrollToTop    = function ()      { window.scrollTo({ top: 0, behavior: 'smooth' }); };
+        window.lockBodyScroll = function (lock)  { document.body.style.overflow = lock ? 'hidden' : ''; };
     </script>
 </head>
 <body>
