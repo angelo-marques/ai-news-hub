@@ -7,10 +7,9 @@ using Shared.Models;
 
 namespace DataFetcher.Services;
 
-public class GroqTranslatorService(HttpClient http, string apiKey)
+public class GroqTranslatorService
 {
-    private const string ApiUrl = "https://api.groq.com/openai/v1/chat/completions";
-    private const string Model = "llama-3.1-8b-instant";
+    private readonly HttpClient http;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -21,6 +20,44 @@ public class GroqTranslatorService(HttpClient http, string apiKey)
     private static readonly MarkdownPipeline MarkdownPipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
         .Build();
+
+    private readonly record struct ApiProvider(string Name, string Url, string Key, string Model);
+
+    private readonly List<ApiProvider> _providers = new();
+
+    public GroqTranslatorService(HttpClient http, string apiKey)
+    {
+        this.http = http;
+
+        // Primário (Groq)
+        if (!string.IsNullOrWhiteSpace(apiKey))
+        {
+            _providers.Add(new ApiProvider("Groq", "https://api.groq.com/openai/v1/chat/completions", apiKey, "llama-3.1-8b-instant"));
+        }
+
+        // Lista de fallbacks adicionais pelas variáveis de ambiente configuráveis no GitHub:
+        TryAddProvider("OpenRouter", "OPENROUTER_API_KEY", "https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_MODEL", "google/gemini-flash-1.5");
+        TryAddProvider("DeepSeek", "DEEPSEEK_API_KEY", "https://api.deepseek.com/chat/completions", "DEEPSEEK_MODEL", "deepseek-chat");
+        TryAddProvider("TogetherAI", "TOGETHER_API_KEY", "https://api.together.xyz/v1/chat/completions", "TOGETHER_MODEL", "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo");
+        TryAddProvider("OpenAI", "OPENAI_API_KEY", "https://api.openai.com/v1/chat/completions", "OPENAI_MODEL", "gpt-4o-mini");
+        
+        // Genérico pra qualquer outro backend (Ollama, SambaNova, etc)
+        TryAddProvider("CustomFallback", "FALLBACK_API_KEY", "FALLBACK_API_URL", "FALLBACK_MODEL", "google/gemini-flash-1.5");
+    }
+
+    private void TryAddProvider(string name, string keyEnv, string urlEnvOrValue, string modelEnv, string defaultModel)
+    {
+        var key = Environment.GetEnvironmentVariable(keyEnv);
+        if (string.IsNullOrWhiteSpace(key)) return;
+
+        var url = urlEnvOrValue.StartsWith("http") ? urlEnvOrValue : Environment.GetEnvironmentVariable(urlEnvOrValue);
+        if (string.IsNullOrWhiteSpace(url)) return;
+
+        var model = Environment.GetEnvironmentVariable(modelEnv);
+        if (string.IsNullOrWhiteSpace(model)) model = defaultModel;
+
+        _providers.Add(new ApiProvider(name, url, key, model));
+    }
 
     public async Task<Article?> TranslateArxivAsync(ArxivPaper paper)
     {
@@ -37,7 +74,7 @@ public class GroqTranslatorService(HttpClient http, string apiKey)
             extra: $"Categorias arXiv: {string.Join(", ", paper.Categories.Take(4))}"
         );
 
-        var result = await CallGroqAsync(prompt);
+        var result = await CallApiWithFailoverAsync(prompt);
         if (result is null) return null;
 
         var newsHtml = Markdown.ToHtml(result.NewsText, MarkdownPipeline);
@@ -84,7 +121,7 @@ public class GroqTranslatorService(HttpClient http, string apiKey)
             extra: extra
         );
 
-        var result = await CallGroqAsync(prompt);
+        var result = await CallApiWithFailoverAsync(prompt);
         if (result is null) return null;
 
         var newsHtml = Markdown.ToHtml(result.NewsText, MarkdownPipeline);
@@ -130,7 +167,7 @@ public class GroqTranslatorService(HttpClient http, string apiKey)
             extra: paper.Upvotes > 0 ? $"Upvotes na comunidade: {paper.Upvotes}" : ""
         );
 
-        var result = await CallGroqAsync(prompt);
+        var result = await CallApiWithFailoverAsync(prompt);
         if (result is null) return null;
 
         var newsHtml = Markdown.ToHtml(result.NewsText, MarkdownPipeline);
@@ -179,7 +216,7 @@ public class GroqTranslatorService(HttpClient http, string apiKey)
             extra: extra
         );
 
-        var result = await CallGroqAsync(prompt);
+        var result = await CallApiWithFailoverAsync(prompt);
         if (result is null) return null;
 
         var newsHtml = Markdown.ToHtml(result.NewsText, MarkdownPipeline);
@@ -222,7 +259,7 @@ Escreva uma notícia jornalística em **português do Brasil (PT-BR)** com base 
 - Use **negrito** para destacar conceitos-chave na primeira aparição
 - NÃO invente dados que não estejam no abstract
 - Mencione os autores/instituições no texto
-- Adicione ao final: `---\n*Fonte: {{source}} | [Acessar paper original]({{sourceUrl}})*`
+- Adicione ao final: `--- \n*Fonte: {{source}} | [Acessar paper original]({{sourceUrl}})*`
 
 ## PAPER ORIGINAL
 - **Título:** {{title}}
@@ -242,45 +279,46 @@ As tags devem ser palavras-chave em inglês ou PT-BR relevantes ao tema (ex: "de
 """;
     }
 
-    private readonly string? _fallbackApiUrl = Environment.GetEnvironmentVariable("FALLBACK_API_URL");
-    private readonly string? _fallbackApiKey = Environment.GetEnvironmentVariable("FALLBACK_API_KEY");
-    private readonly string _fallbackModel = Environment.GetEnvironmentVariable("FALLBACK_MODEL") ?? "google/gemini-flash-1.5";
-
-    private async Task<TranslationResult?> CallGroqAsync(string prompt)
+    private async Task<TranslationResult?> CallApiWithFailoverAsync(string prompt)
     {
-        int maxRetries = 3;
-        int baseDelayMs = 2000;
-
-        // Tenta provedor primário com Exponential Backoff
-        for (int attempt = 1; attempt <= maxRetries; attempt++)
+        if (_providers.Count == 0)
         {
-            var result = await TryCallApiAsync(prompt, ApiUrl, apiKey, Model);
-            if (result != null) return result;
+            Console.WriteLine("    [ERRO] Nenhum provedor de IA (API KEY) configurado. O artigo será pulado.");
+            return null;
+        }
 
-            if (attempt < maxRetries)
+        int maxRetries = 2; // Tentativas limite por provedor
+        int baseDelayMs = 2500;
+
+        foreach (var provider in _providers)
+        {
+            Console.WriteLine($"      ⚡ [{provider.Name}] Processando com modelo {provider.Model}...");
+
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
             {
-                int delay = baseDelayMs * (int)Math.Pow(2, attempt - 1);
-                Console.WriteLine($"    [AVISO] Primário falhou (Tentativa {attempt}/{maxRetries}). Aguardando {delay}ms...");
-                await Task.Delay(delay);
+                var result = await TryExecuteRequestAsync(prompt, provider);
+                if (result != null) return result;
+
+                if (attempt < maxRetries)
+                {
+                    int delay = baseDelayMs * attempt; // Backoff linear ao invés de exponencial forte
+                    Console.WriteLine($"      ⏳ [{provider.Name}] Falha na tentativa {attempt}/{maxRetries}. Aguardando {delay}ms...");
+                    await Task.Delay(delay);
+                }
             }
+
+            Console.WriteLine($"      ❌ [{provider.Name}] Limite esgotado ou erro crítico persistente. Acionando MODO FALLBACK...");
         }
 
-        // Tenta Fallback se configurado
-        if (!string.IsNullOrWhiteSpace(_fallbackApiKey) && !string.IsNullOrWhiteSpace(_fallbackApiUrl))
-        {
-            Console.WriteLine($"    [AVISO] Limite primário esgotado! Tentando transição para Fallback ({_fallbackApiUrl})...");
-            var fallbackResult = await TryCallApiAsync(prompt, _fallbackApiUrl, _fallbackApiKey, _fallbackModel);
-            if (fallbackResult != null) return fallbackResult;
-        }
-
-        return null;
+        Console.WriteLine($"    [ERRO CRÍTICO] Todos os provedores tentados falharam.");
+        return null; // Apenas desiste do artigo se todo pipeline cair
     }
 
-    private async Task<TranslationResult?> TryCallApiAsync(string prompt, string apiUrl, string key, string modelName)
+    private async Task<TranslationResult?> TryExecuteRequestAsync(string prompt, ApiProvider provider)
     {
         var requestBody = new
         {
-            model = modelName,
+            model = provider.Model,
             max_tokens = 1800,
             messages = new[]
             {
@@ -288,9 +326,9 @@ As tags devem ser palavras-chave em inglês ou PT-BR relevantes ao tema (ex: "de
             }
         };
 
-        using var req = new HttpRequestMessage(HttpMethod.Post, apiUrl);
-        req.Headers.Add("Authorization", $"Bearer {key}");
-        // OpenRouter optional headers support (won't affect Groq)
+        using var req = new HttpRequestMessage(HttpMethod.Post, provider.Url);
+        req.Headers.Add("Authorization", $"Bearer {provider.Key}");
+        // Cabeçalhos úteis para provedores como OpenRouter
         req.Headers.Add("HTTP-Referer", "https://hubiasbrasil.dev");
         req.Headers.Add("X-Title", "Hub IA Brasil Crawler");
         req.Content = new StringContent(
@@ -306,7 +344,7 @@ As tags devem ser palavras-chave em inglês ou PT-BR relevantes ao tema (ex: "de
 
             if (!resp.IsSuccessStatusCode)
             {
-                Console.WriteLine($"    [ERRO API] [{new Uri(apiUrl).Host}] {resp.StatusCode}: {body[..Math.Min(300, body.Length)]}");
+                Console.WriteLine($"        [-ERRO-] Status {resp.StatusCode}: {body[..Math.Min(180, body.Length)]}");
                 return null;
             }
 
@@ -326,7 +364,7 @@ As tags devem ser palavras-chave em inglês ou PT-BR relevantes ao tema (ex: "de
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"    [ERRO parse/network] {ex.Message}");
+            Console.WriteLine($"        [-EX-] {ex.Message}");
             return null;
         }
     }
