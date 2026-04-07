@@ -279,6 +279,8 @@ As tags devem ser palavras-chave em inglês ou PT-BR relevantes ao tema (ex: "de
 """;
     }
 
+    private int _currentProviderIndex = 0;
+
     private async Task<TranslationResult?> CallApiWithFailoverAsync(string prompt)
     {
         if (_providers.Count == 0)
@@ -290,8 +292,9 @@ As tags devem ser palavras-chave em inglês ou PT-BR relevantes ao tema (ex: "de
         int maxRetries = 2; // Tentativas limite por provedor
         int baseDelayMs = 2500;
 
-        foreach (var provider in _providers)
+        while (_currentProviderIndex < _providers.Count)
         {
+            var provider = _providers[_currentProviderIndex];
             Console.WriteLine($"      ⚡ [{provider.Name}] Processando com modelo {provider.Model}...");
 
             for (int attempt = 1; attempt <= maxRetries; attempt++)
@@ -301,13 +304,14 @@ As tags devem ser palavras-chave em inglês ou PT-BR relevantes ao tema (ex: "de
 
                 if (attempt < maxRetries)
                 {
-                    int delay = baseDelayMs * attempt; // Backoff linear ao invés de exponencial forte
+                    int delay = baseDelayMs * attempt; // Backoff linear
                     Console.WriteLine($"      ⏳ [{provider.Name}] Falha na tentativa {attempt}/{maxRetries}. Aguardando {delay}ms...");
                     await Task.Delay(delay);
                 }
             }
 
-            Console.WriteLine($"      ❌ [{provider.Name}] Limite esgotado ou erro crítico persistente. Acionando MODO FALLBACK...");
+            Console.WriteLine($"      ❌ [{provider.Name}] Limite esgotado ou erro. Acionando MODO FALLBACK (Todos os próximos artigos ignorarão este provedor nesta rodada) ...");
+            _currentProviderIndex++;
         }
 
         Console.WriteLine($"    [ERRO CRÍTICO] Todos os provedores tentados falharam.");
