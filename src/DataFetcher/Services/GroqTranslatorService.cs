@@ -59,6 +59,52 @@ public class GroqTranslatorService(HttpClient http, string apiKey)
         };
     }
 
+    public async Task<Article?> TranslateHfAsync(HuggingFacePaper paper)
+    {
+        if (string.IsNullOrWhiteSpace(paper.Summary)) return null;
+
+        var authors = paper.Authors.Select(a => a.Name).ToArray();
+        var authorsStr = authors.Length > 3
+            ? $"{string.Join(", ", authors.Take(3))} et al."
+            : string.Join(", ", authors);
+
+        DateTime publishedAt = DateTime.UtcNow;
+        if (!string.IsNullOrEmpty(paper.PublishedAt) && DateTime.TryParse(paper.PublishedAt, out var dt))
+            publishedAt = dt;
+
+        var paperUrl = $"https://huggingface.co/papers/{paper.Id}";
+
+        var prompt = BuildPrompt(
+            title: paper.Title,
+            authors: authorsStr,
+            abstract_: paper.Summary,
+            source: "Hugging Face",
+            sourceUrl: paperUrl,
+            extra: paper.Upvotes > 0 ? $"Upvotes na comunidade: {paper.Upvotes}" : ""
+        );
+
+        var result = await CallGroqAsync(prompt);
+        if (result is null) return null;
+
+        var newsHtml = Markdown.ToHtml(result.NewsText, MarkdownPipeline);
+
+        return new Article
+        {
+            Id = $"hf:{paper.Id}",
+            Title = paper.Title,
+            TitlePt = result.TitlePt,
+            NewsText = result.NewsText,
+            NewsHtml = newsHtml,
+            Authors = authors,
+            Source = "Hugging Face",
+            SourceUrl = "https://huggingface.co/papers",
+            PaperUrl = paperUrl,
+            PublishedAt = publishedAt,
+            FetchedAt = DateTime.UtcNow,
+            Tags = result.Tags
+        };
+    }
+
     public async Task<Article?> TranslatePwcAsync(PwcPaper paper)
     {
         if (string.IsNullOrWhiteSpace(paper.Abstract)) return null;

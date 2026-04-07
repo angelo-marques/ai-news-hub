@@ -3,9 +3,10 @@
 
     private string CssClass => Source switch
     {
-        "arXiv" => "badge badge-arxiv",
+        "arXiv"            => "badge badge-arxiv",
         "Papers with Code" => "badge badge-pwc",
-        _ => "badge"
+        "Hugging Face"     => "badge badge-hf",
+        _                  => "badge"
     };
 }
 

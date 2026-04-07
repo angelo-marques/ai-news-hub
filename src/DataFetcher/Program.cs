@@ -28,6 +28,7 @@ httpClient.Timeout = TimeSpan.FromSeconds(60);
 // --- Initialize Services ---
 var arxivService    = new ArxivService(httpClient);
 var pwcService      = new PapersWithCodeService(httpClient);
+var hfService       = new HuggingFaceService(httpClient);
 var translator      = new GroqTranslatorService(httpClient, apiKey);
 var storage         = new ArticleStorageService();
 
@@ -41,13 +42,13 @@ Console.WriteLine($"  ↳ Artigos existentes: {existingArticles.Count}");
 Console.WriteLine();
 
 var newArticles = new List<Article>();
-const int MaxPerSource = 3; // 3 de cada fonte = até 6 por execução
+const int MaxPerSource = 4; // 4 de cada fonte = até 12 por execução
 
 // ═══════════════════════════════════════════════
 // FONTE 1: arXiv
 // ═══════════════════════════════════════════════
 Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-Console.WriteLine("📡 [1/2] Buscando papers no arXiv...");
+Console.WriteLine("📡 [1/3] Buscando papers no arXiv...");
 
 try
 {
@@ -98,7 +99,7 @@ catch (Exception ex)
 // ═══════════════════════════════════════════════
 Console.WriteLine();
 Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-Console.WriteLine("📡 [2/2] Buscando papers no Papers with Code...");
+Console.WriteLine("📡 [2/3] Buscando papers no Papers with Code...");
 
 try
 {
@@ -147,6 +148,60 @@ try
 catch (Exception ex)
 {
     Console.WriteLine($"  ❌ Erro no Papers with Code: {ex.Message}");
+}
+
+// ═══════════════════════════════════════════════
+// FONTE 3: HuggingFace Daily Papers
+// ═══════════════════════════════════════════════
+Console.WriteLine();
+Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+Console.WriteLine("📡 [3/3] Buscando papers no HuggingFace Daily...");
+
+try
+{
+    var hfPapers = await hfService.FetchRecentAsync(maxResults: 20);
+    int hfCount = 0;
+
+    foreach (var paper in hfPapers)
+    {
+        if (hfCount >= MaxPerSource) break;
+
+        var fullId   = $"hf:{paper.Id}";
+        var arxivRef = $"arxiv:{paper.Id}"; // HF IDs são arxiv IDs
+
+        // Skip se já visto via qualquer ID
+        if (seenIds.Ids.Contains(fullId) || seenIds.Ids.Contains(arxivRef))
+        {
+            Console.WriteLine($"  ⊘ [{paper.Id}] já processado");
+            continue;
+        }
+
+        Console.WriteLine($"\n  ✎ Traduzindo: {Truncate(paper.Title, 72)}");
+        Console.WriteLine($"    Upvotes: {paper.Upvotes}");
+
+        var article = await translator.TranslateHfAsync(paper);
+        if (article is not null)
+        {
+            newArticles.Add(article);
+            seenIds.Ids.Add(fullId);
+            seenIds.Ids.Add(arxivRef); // cross-dedup
+            hfCount++;
+            Console.WriteLine($"    ✅ → {Truncate(article.TitlePt, 72)}");
+            Console.WriteLine($"       Tags: {string.Join(", ", article.Tags.Take(4))}");
+        }
+        else
+        {
+            Console.WriteLine($"    ⚠️ Falha na tradução — pulando");
+        }
+
+        await Task.Delay(2000);
+    }
+
+    Console.WriteLine($"\n  HuggingFace: {hfCount} novo(s) artigo(s)");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"  ❌ Erro no HuggingFace: {ex.Message}");
 }
 
 // ═══════════════════════════════════════════════

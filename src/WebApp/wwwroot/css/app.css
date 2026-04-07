@@ -497,6 +497,7 @@ button { cursor: pointer; border: none; background: none; font: inherit; color: 
 }
 .badge-arxiv { background: var(--red-bg); color: var(--red); }
 .badge-pwc   { background: var(--blue-bg); color: var(--blue); }
+.badge-hf    { background: rgba(255,160,0,.13); color: #ff9d00; }
 .badge-new   { background: var(--green-bg); color: var(--green); }
 
 .tag {
