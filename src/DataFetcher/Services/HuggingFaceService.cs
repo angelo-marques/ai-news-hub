@@ -35,8 +35,8 @@ public class HuggingFaceService(HttpClient http)
                 await Task.Delay(400);
         }
 
-        // Ordena por upvotes para priorizar os mais relevantes
-        return all.OrderByDescending(p => p.Upvotes).ToList();
+        // Ordena por data para garantir captura dos dias recentes, depois por upvotes
+        return all.OrderByDescending(p => p.PublishedAt).ThenByDescending(p => p.Upvotes).ToList();
     }
 
     private async Task<List<HuggingFacePaper>> FetchDayAsync(DateTime date)
@@ -62,6 +62,7 @@ public class HuggingFaceService(HttpClient http)
                 .Select(i => i.Paper)
                 .Where(p => p is not null && !string.IsNullOrWhiteSpace(p.Summary) && p.Summary.Length > 60)
                 .Cast<HuggingFacePaper>()
+                .Select(p => p with { PublishedAt = p.PublishedAt ?? date.ToString("yyyy-MM-dd") })
                 .OrderByDescending(p => p.Upvotes)
                 .ToList();
         }

@@ -39,6 +39,7 @@ public class PapersWithCodeService(HttpClient http)
             var response = JsonSerializer.Deserialize<PwcResponse>(json, JsonOptions);
             var papers = response?.Results?
                 .Where(p => !string.IsNullOrWhiteSpace(p.Abstract) && p.Abstract.Length > 80)
+                .OrderByDescending(p => p.Published ?? "")
                 .ToList() ?? [];
 
             Console.WriteLine($"    Parsed {papers.Count} papers do Papers with Code");

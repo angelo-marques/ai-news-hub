@@ -45,6 +45,7 @@ public class ArxivService(HttpClient http)
                 .Elements(Atom + "entry")
                 .Select(ParseEntry)
                 .Where(p => !string.IsNullOrWhiteSpace(p.Abstract) && p.Abstract.Length > 100)
+                .OrderByDescending(p => p.PublishedAt)
                 .ToList();
 
             Console.WriteLine($"    Parsed {papers.Count} papers do arXiv");

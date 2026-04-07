@@ -62,8 +62,8 @@ Console.WriteLine("📡 [1/4] Buscando papers no arXiv...");
 try
 {
     var arxivPapers = isBackfill
-        ? await arxivService.FetchFromDateAsync(backfillStart, maxResults: 100)
-        : await arxivService.FetchRecentAsync(maxResults: 30);
+        ? await arxivService.FetchFromDateAsync(backfillStart, maxResults: 300)
+        : await arxivService.FetchRecentAsync(maxResults: 150);
 
     int arxivCount = 0;
     foreach (var paper in arxivPapers)
@@ -108,8 +108,8 @@ Console.WriteLine("📡 [2/4] Buscando papers no Papers with Code...");
 try
 {
     var pwcPapers = isBackfill
-        ? await pwcService.FetchFromDateAsync(backfillStart, pageSize: 40)
-        : await pwcService.FetchRecentAsync(pageSize: 20);
+        ? await pwcService.FetchFromDateAsync(backfillStart, pageSize: 250)
+        : await pwcService.FetchRecentAsync(pageSize: 150);
 
     int pwcCount = 0;
     foreach (var paper in pwcPapers)
@@ -157,7 +157,7 @@ try
 {
     var hfPapers = isBackfill
         ? await hfService.FetchFromDateAsync(backfillStart)
-        : await hfService.FetchRecentAsync(maxResults: 20);
+        : await hfService.FetchRecentAsync(maxResults: 150);
 
     int hfCount = 0;
     foreach (var paper in hfPapers)
@@ -203,7 +203,7 @@ Console.WriteLine("📡 [4/4] Buscando papers no Semantic Scholar...");
 
 try
 {
-    var ssPapers = await ssService.FetchRecentAsync(backfillStart);
+    var ssPapers = await ssService.FetchRecentAsync(backfillStart, limitPerQuery: 50);
     int ssCount = 0;
 
     foreach (var paper in ssPapers)
