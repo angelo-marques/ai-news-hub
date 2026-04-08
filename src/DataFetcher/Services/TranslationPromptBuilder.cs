@@ -5,7 +5,20 @@ namespace DataFetcher.Services;
 /// </summary>
 public static class TranslationPromptBuilder
 {
+    private const int MaxAbstractLength = 4000;
+
     public static string Build(string title, string authors, string abstract_, string source, string sourceUrl, string extra = "")
+    {
+        if (abstract_.Length > MaxAbstractLength)
+        {
+            abstract_ = abstract_[..MaxAbstractLength] + "... [abstract truncado]";
+            Console.WriteLine($"        [aviso] Abstract truncado para {MaxAbstractLength} chars");
+        }
+
+        return BuildInternal(title, authors, abstract_, source, sourceUrl, extra);
+    }
+
+    private static string BuildInternal(string title, string authors, string abstract_, string source, string sourceUrl, string extra)
     {
         return $$"""
 Você é Angelo Marques de Oliveira Silva, redator especializado em tecnologia e inteligência artificial para o portal "Hub IA Brasil" (hubiasbrasil.dev).

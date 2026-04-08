@@ -24,10 +24,18 @@ public class AiTranslatorService
     private readonly List<ApiProvider> _providers;
     private int _currentProviderIndex = 0;
 
+    // Limite de caracteres do abstract para evitar erros 400 de context too long
+    private const int MaxAbstractLength = 4000;
+
     public AiTranslatorService(HttpClient http, string groqApiKey)
     {
         _http = http;
         _providers = AiProviderRegistry.Build(groqApiKey);
+
+        Console.WriteLine($"  🤖 Provedores de IA carregados ({_providers.Count}):");
+        foreach (var p in _providers)
+            Console.WriteLine($"     [{p.Name}] modelo: {p.Model}");
+        Console.WriteLine();
     }
 
     public async Task<Article?> TranslateArxivAsync(ArxivPaper paper)
@@ -200,11 +208,19 @@ public class AiTranslatorService
 
             for (int attempt = 1; attempt <= maxRetries; attempt++)
             {
-                var result = await TryExecuteRequestAsync(prompt, provider);
+                var (result, skipProvider) = await TryExecuteRequestAsync(prompt, provider);
+
                 if (result != null)
                 {
                     result.Provider = provider.Name;
                     return result;
+                }
+
+                // 429 Rate Limit ou erro permanente: pula direto pro próximo provider sem esperar
+                if (skipProvider)
+                {
+                    Console.WriteLine($"      ⏭️  [{provider.Name}] Erro permanente/rate-limit — pulando para o próximo provider.");
+                    break;
                 }
 
                 if (attempt < maxRetries)
@@ -215,15 +231,17 @@ public class AiTranslatorService
                 }
             }
 
-            Console.WriteLine($"      ❌ [{provider.Name}] Limite esgotado. Acionando MODO FALLBACK (ignorado nesta rodada)...");
+            Console.WriteLine($"      ❌ [{provider.Name}] Esgotado — passando para o próximo...");
             _currentProviderIndex++;
         }
 
-        Console.WriteLine("    [ERRO CRÍTICO] Todos os provedores tentados falharam.");
+        // Todos os providers foram esgotados — todos os artigos seguintes serão pulados nesta rodada.
+        Console.WriteLine("    [ERRO CRÍTICO] Todos os provedores falharam. Os artigos restantes desta rodada serão ignorados.");
         return null;
     }
 
-    private async Task<TranslationResult?> TryExecuteRequestAsync(string prompt, ApiProvider provider)
+    /// <returns>(result, skipProvider) — skipProvider=true indica erro permanente/rate-limit; não vale retrying.</returns>
+    private async Task<(TranslationResult? result, bool skipProvider)> TryExecuteRequestAsync(string prompt, ApiProvider provider)
     {
         var requestBody = new
         {
@@ -249,14 +267,27 @@ public class AiTranslatorService
 
             if (!resp.IsSuccessStatusCode)
             {
-                Console.WriteLine($"        [-ERRO-] Status {resp.StatusCode}: {body[..Math.Min(180, body.Length)]}");
-                return null;
+                var preview = body.Length > 300 ? body[..300] + "…" : body;
+                Console.WriteLine($"        [-ERRO HTTP {(int)resp.StatusCode}] {preview}");
+
+                // 429 = rate limit, 401/403 = auth, 400 = bad request → não vale retrying
+                bool permanent = resp.StatusCode is
+                    System.Net.HttpStatusCode.TooManyRequests or
+                    System.Net.HttpStatusCode.Unauthorized or
+                    System.Net.HttpStatusCode.Forbidden or
+                    System.Net.HttpStatusCode.BadRequest;
+
+                return (null, permanent);
             }
 
             var apiResp = JsonSerializer.Deserialize<AiApiResponse>(body, JsonOptions);
             var text    = apiResp?.Choices?.FirstOrDefault()?.Message?.Content;
 
-            if (string.IsNullOrWhiteSpace(text)) return null;
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                Console.WriteLine($"        [-ERRO] Resposta vazia ou sem 'choices'. Body: {body[..Math.Min(200, body.Length)]}");
+                return (null, false);
+            }
 
             var json = text.Trim();
             if (json.StartsWith("```"))
@@ -265,12 +296,24 @@ public class AiTranslatorService
                 json = string.Join('\n', lines.Skip(1).SkipLast(1));
             }
 
-            return JsonSerializer.Deserialize<TranslationResult>(json.Trim(), JsonOptions);
+            var parsed = JsonSerializer.Deserialize<TranslationResult>(json.Trim(), JsonOptions);
+            if (parsed is null)
+            {
+                Console.WriteLine($"        [-ERRO] JSON inválido retornado pelo modelo. Conteúdo: {text[..Math.Min(300, text.Length)]}");
+                return (null, false);
+            }
+
+            return (parsed, false);
+        }
+        catch (TaskCanceledException)
+        {
+            Console.WriteLine($"        [-TIMEOUT] {provider.Name} não respondeu dentro do limite de {_http.Timeout.TotalSeconds}s");
+            return (null, false);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"        [-EX-] {ex.Message}");
-            return null;
+            Console.WriteLine($"        [-EX-] {ex.GetType().Name}: {ex.Message}");
+            return (null, false);
         }
     }
 
