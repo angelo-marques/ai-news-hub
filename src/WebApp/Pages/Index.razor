@@ -19,8 +19,8 @@
 <!-- ══ HEADER ══ -->
 <header class="site-header">
     <div class="header-inner">
-        <a href="/" class="logo" style="display:flex; align-items:center;">
-            <img src="img/logo.png" alt="Logo Hub IA" style="height: 38px; margin-right: 12px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,200,255,0.2);" />
+        <a href="/" class="logo" style="display:flex;align-items:center;">
+            <img src="img/logo.png" alt="Logo Hub IA" style="width:auto;height:38px;border-radius:8px;box-shadow:0 0 10px rgba(0,200,255,0.2);flex-shrink:0;" />
             <div>
                 <div class="logo-name">Hub IA Brasil</div>
                 <div class="logo-tagline">Tecnologia & Inteligência Artificial</div>
@@ -125,8 +125,8 @@
                 <!-- Featured -->
                 <article class="hero-featured" @onclick="() => OpenArticle(featured)">
                     <div class="hero-img-wrap">
-                        <img src="@GetImageUrl(featured.Id)" alt="@featured.TitlePt"
-                             onerror="this.onerror=null; this.src='@GetPicsumUrl(featured.Id)';"
+                        <img src="@GetImageUrl(featured)" alt="@featured.TitlePt"
+                             onerror="this.onerror=null; this.src='@GetFallbackImageUrl(featured)';"
                              class="hero-img" loading="lazy" />
                         <div class="hero-img-overlay"></div>
                         <div class="hero-badge-wrap">
@@ -166,8 +166,8 @@
                     {
                         <article class="hero-side" @onclick="() => OpenArticle(art)">
                             <div class="side-img-wrap">
-                                <img src="@GetImageUrl(art.Id)" alt="@art.TitlePt"
-                                     onerror="this.onerror=null; this.src='@GetPicsumUrl(art.Id)';"
+                                <img src="@GetImageUrl(art)" alt="@art.TitlePt"
+                                     onerror="this.onerror=null; this.src='@GetFallbackImageUrl(art)';"
                                      class="side-img" loading="lazy" />
                             </div>
                             <div class="side-content">
@@ -257,8 +257,8 @@
                 {
                     <article class="card" @onclick="() => OpenArticle(art)">
                         <div class="card-img-wrap">
-                            <img src="@GetImageUrl(art.Id)" alt="@art.TitlePt"
-                                 onerror="this.onerror=null; this.src='@GetPicsumUrl(art.Id)';"
+                            <img src="@GetImageUrl(art)" alt="@art.TitlePt"
+                                 onerror="this.onerror=null; this.src='@GetFallbackImageUrl(art)';"
                                  class="card-img" loading="lazy" />
                         </div>
                         <div class="card-body">
@@ -303,8 +303,8 @@
             <button class="modal-close" @onclick="CloseArticle">✕</button>
 
             <div class="modal-img-wrap">
-                <img src="@GetImageUrl(selectedArticle.Id)" alt="@selectedArticle.TitlePt"
-                     onerror="this.onerror=null; this.src='@GetPicsumUrl(selectedArticle.Id)';"
+                <img src="@GetImageUrl(selectedArticle)" alt="@selectedArticle.TitlePt"
+                     onerror="this.onerror=null; this.src='@GetFallbackImageUrl(selectedArticle)';"
                      class="modal-img" />
             </div>
 
@@ -412,7 +412,7 @@
     <div class="footer-inner">
         <div class="footer-col footer-col--brand">
             <div class="footer-brand-name" style="display:flex; align-items:center;">
-                <img src="img/logo.png" style="height:24px; border-radius:4px; margin-right:8px;" /> Hub IA Brasil
+                <img src="img/logo.png" style="width:auto;height:24px;border-radius:4px;margin-right:8px;flex-shrink:0;" /> Hub IA Brasil
             </div>
             <p class="footer-desc">
                 Portal de cobertura jornalística sobre pesquisas e avanços em inteligência artificial. 
@@ -579,20 +579,35 @@
         authors.Length <= 2 ? string.Join(", ", authors) :
         $"{authors[0]} et al.";
 
-    private static string GetPicsumUrl(string articleId)
+    /// Imagem principal:
+    /// - arXiv/HF → figura real do paper via ar5iv
+    /// - Demais   → foto do Flickr via loremflickr (/any garante que "technology" sempre dá match)
+    private static string GetImageUrl(Article art)
     {
-        var seed = (uint)articleId.GetHashCode() % 900 + 100;
+        if (art.Id.StartsWith("arxiv:") || art.Id.StartsWith("hf:"))
+        {
+            var rawId = art.Id.Split(':', 2)[1];
+            return $"https://ar5iv.labs.arxiv.org/html/{rawId}/assets/x1.png";
+        }
+        return GetFlickrUrl(art);
+    }
+
+    /// Fallback (onerror): picsum sempre retorna uma foto real — nunca falha.
+    private static string GetFallbackImageUrl(Article art)
+    {
+        var seed = (uint)art.Id.GetHashCode() % 900 + 100;
         return $"https://picsum.photos/seed/{seed}/800/450";
     }
 
-    private static string GetImageUrl(string articleId)
+    /// Loremflickr com modo /any: "technology" está sempre presente como garantia,
+    /// mais a primeira tag do artigo para relevância de conteúdo.
+    /// /any = retorna foto que corresponda a QUALQUER dos termos → nunca volta "NO IMAGE".
+    private static string GetFlickrUrl(Article art)
     {
-        if (articleId.StartsWith("arxiv:") || articleId.StartsWith("hf:"))
-        {
-            var rawId = articleId.Split(':', 2)[1];
-            // Usa o framework ar5iv para puxar a primeira figura/imagem real compilada do paper
-            return $"https://ar5iv.labs.arxiv.org/html/{rawId}/assets/x1.png";
-        }
-        return GetPicsumUrl(articleId);
+        var tag = (art.Tags.FirstOrDefault() ?? "research")
+            .ToLowerInvariant()
+            .Replace(" ", "+");
+        var seed = (uint)art.Id.GetHashCode() % 9999 + 1;
+        return $"https://loremflickr.com/800/450/technology,{Uri.EscapeDataString(tag)}/any?lock={seed}";
     }
 }
