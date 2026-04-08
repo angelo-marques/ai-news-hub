@@ -144,11 +144,13 @@ button { cursor: pointer; border: none; background: none; font: inherit; color: 
 }
 
 /* Logo */
-.logo { display: flex; align-items: center; gap: 12px; color: var(--text); text-decoration: none; flex-shrink: 0; }
+.logo { display: flex; align-items: center; gap: 12px; color: var(--text); text-decoration: none; flex-shrink: 0; min-width: 0; }
 .logo:hover { color: var(--text); }
+/* Evita que a regra global img{width:100%} distorça/corte a logo */
+.logo img { width: auto !important; height: 38px; flex-shrink: 0; object-fit: contain !important; }
 .logo-mark { color: var(--accent); font-size: 1.5rem; line-height: 1; }
-.logo-name { font-family: var(--serif); font-size: 1.3rem; font-weight: 700; letter-spacing: -.01em; white-space: nowrap; }
-.logo-tagline { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin-top: 1px; }
+.logo-name { font-family: var(--serif); font-size: 1.3rem; font-weight: 700; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.logo-tagline { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin-top: 1px; white-space: nowrap; }
 
 /* Main nav */
 .main-nav { display: flex; align-items: center; gap: 2px; flex: 1; }
@@ -846,12 +848,16 @@ button { cursor: pointer; border: none; background: none; font: inherit; color: 
     .grid { grid-template-columns: repeat(2, 1fr); }
 }
 
-@media (max-width: 768px) {
-    .topbar { display: none; }
-    .header-inner { gap: 12px; }
+/* Esconde nav e busca do header antes de comprimir a logo (telas médias) */
+@media (max-width: 900px) {
     .main-nav { display: none; }
     .menu-btn { display: flex; }
     .search-wrap { display: none; }
+}
+
+@media (max-width: 768px) {
+    .topbar { display: none; }
+    .header-inner { gap: 12px; }
     .logo-tagline { display: none; }
     .hero-inner { grid-template-columns: 1fr; }
     .hero-secondary { flex-direction: row; }
