@@ -1,5 +1,7 @@
 using System.Xml.Linq;
 using DataFetcher.Models;
+using Markdig;
+using Shared.Models;
 
 namespace DataFetcher.Services;
 
@@ -110,4 +112,5 @@ public class ArxivService(HttpClient http)
 
         return id;
     }
+}
 }
