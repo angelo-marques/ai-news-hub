@@ -235,11 +235,8 @@ public class AiTranslatorService
             _currentProviderIndex++;
         }
 
-        // Todos os providers foram esgotados neste artigo.
-        // Reseta o índice para que o próximo artigo tente novamente desde o início.
-        // (providers com rate-limit podem ter capacidade restaurada alguns segundos depois)
-        Console.WriteLine("    [ERRO CRÍTICO] Todos os provedores falharam neste artigo. Resetando índice para o próximo artigo.");
-        _currentProviderIndex = 0;
+        // Todos os providers foram esgotados — todos os artigos seguintes serão pulados nesta rodada.
+        Console.WriteLine("    [ERRO CRÍTICO] Todos os provedores falharam. Os artigos restantes desta rodada serão ignorados.");
         return null;
     }
 
