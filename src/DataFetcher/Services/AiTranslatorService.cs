@@ -24,6 +24,10 @@ public class AiTranslatorService
     private readonly List<ApiProvider> _providers;
     private int _currentProviderIndex = 0;
 
+    /// True quando todos os provedores foram esgotados nesta rodada.
+    /// Program.cs usa isso para parar os loops e ir direto para a persistência.
+    public bool AllProvidersExhausted => _providers.Count > 0 && _currentProviderIndex >= _providers.Count;
+
     // Limite de caracteres do abstract para evitar erros 400 de context too long
     private const int MaxAbstractLength = 4000;
 

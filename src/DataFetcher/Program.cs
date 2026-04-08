@@ -52,6 +52,8 @@ Console.WriteLine($"  🔢 Máximo por fonte: {maxPerSource}");
 Console.WriteLine();
 
 var newArticles = new List<Article>();
+// Sinaliza que todos os providers de IA falharam — para loops e vai salvar imediatamente
+bool aiAborted = false;
 
 // ═══════════════════════════════════════════════
 // FONTE 1: arXiv
@@ -89,10 +91,13 @@ try
             arxivCount++;
             Console.WriteLine($"    ✅ → {Truncate(article.TitlePt, 72)}");
             Console.WriteLine($"       Tags: {string.Join(", ", article.Tags.Take(4))}");
+            await Task.Delay(2000); // delay só após sucesso (rate-limit politeness)
         }
-        else Console.WriteLine($"    ⚠️ Falha na tradução — pulando");
-
-        await Task.Delay(2000);
+        else
+        {
+            Console.WriteLine($"    ⚠️ Falha na tradução — pulando");
+            if (translator.AllProvidersExhausted) { aiAborted = true; break; }
+        }
     }
     Console.WriteLine($"\n  arXiv: {arxivCount} novo(s) artigo(s)");
 }
@@ -103,8 +108,10 @@ catch (Exception ex) { Console.WriteLine($"  ❌ Erro no arXiv: {ex.Message}"); 
 // ═══════════════════════════════════════════════
 Console.WriteLine();
 Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+if (aiAborted) { Console.WriteLine("⏭️  [2/4] Pipeline de IA esgotado — fonte ignorada."); }
+else
+{
 Console.WriteLine("📡 [2/4] Buscando papers no Papers with Code...");
-
 try
 {
     var pwcPapers = isBackfill
@@ -137,22 +144,28 @@ try
             pwcCount++;
             Console.WriteLine($"    ✅ → {Truncate(article.TitlePt, 72)}");
             Console.WriteLine($"       Tags: {string.Join(", ", article.Tags.Take(4))}");
+            await Task.Delay(2000);
         }
-        else Console.WriteLine($"    ⚠️ Falha na tradução — pulando");
-
-        await Task.Delay(2000);
+        else
+        {
+            Console.WriteLine($"    ⚠️ Falha na tradução — pulando");
+            if (translator.AllProvidersExhausted) { aiAborted = true; break; }
+        }
     }
     Console.WriteLine($"\n  Papers with Code: {pwcCount} novo(s) artigo(s)");
 }
 catch (Exception ex) { Console.WriteLine($"  ❌ Erro no Papers with Code: {ex.Message}"); }
+} // end !aiAborted
 
 // ═══════════════════════════════════════════════
 // FONTE 3: HuggingFace Daily Papers
 // ═══════════════════════════════════════════════
 Console.WriteLine();
 Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+if (aiAborted) { Console.WriteLine("⏭️  [3/4] Pipeline de IA esgotado — fonte ignorada."); }
+else
+{
 Console.WriteLine("📡 [3/4] Buscando papers no HuggingFace Daily...");
-
 try
 {
     var hfPapers = isBackfill
@@ -185,22 +198,28 @@ try
             hfCount++;
             Console.WriteLine($"    ✅ → {Truncate(article.TitlePt, 72)}");
             Console.WriteLine($"       Tags: {string.Join(", ", article.Tags.Take(4))}");
+            await Task.Delay(2000);
         }
-        else Console.WriteLine($"    ⚠️ Falha na tradução — pulando");
-
-        await Task.Delay(2000);
+        else
+        {
+            Console.WriteLine($"    ⚠️ Falha na tradução — pulando");
+            if (translator.AllProvidersExhausted) { aiAborted = true; break; }
+        }
     }
     Console.WriteLine($"\n  HuggingFace: {hfCount} novo(s) artigo(s)");
 }
 catch (Exception ex) { Console.WriteLine($"  ❌ Erro no HuggingFace: {ex.Message}"); }
+} // end !aiAborted
 
 // ═══════════════════════════════════════════════
 // FONTE 4: Semantic Scholar
 // ═══════════════════════════════════════════════
 Console.WriteLine();
 Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+if (aiAborted) { Console.WriteLine("⏭️  [4/4] Pipeline de IA esgotado — fonte ignorada."); }
+else
+{
 Console.WriteLine("📡 [4/4] Buscando papers no Semantic Scholar...");
-
 try
 {
     var ssPapers = await ssService.FetchRecentAsync(backfillStart, limitPerQuery: 50);
@@ -231,14 +250,21 @@ try
             ssCount++;
             Console.WriteLine($"    ✅ → {Truncate(article.TitlePt, 72)}");
             Console.WriteLine($"       Tags: {string.Join(", ", article.Tags.Take(4))}");
+            await Task.Delay(2000);
         }
-        else Console.WriteLine($"    ⚠️ Falha na tradução — pulando");
-
-        await Task.Delay(2000);
+        else
+        {
+            Console.WriteLine($"    ⚠️ Falha na tradução — pulando");
+            if (translator.AllProvidersExhausted) { aiAborted = true; break; }
+        }
     }
     Console.WriteLine($"\n  Semantic Scholar: {ssCount} novo(s) artigo(s)");
 }
 catch (Exception ex) { Console.WriteLine($"  ❌ Erro no Semantic Scholar: {ex.Message}"); }
+} // end !aiAborted
+
+if (aiAborted)
+    Console.WriteLine("\n⚠️  Pipeline encerrado antecipadamente — dados coletados até aqui serão salvos.");
 
 // ═══════════════════════════════════════════════
 // PERSISTÊNCIA
