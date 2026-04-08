@@ -407,6 +407,107 @@
     </div>
 </section>
 
+<!-- ══ PIPELINE SECTION ══ -->
+<section class="pipeline-section">
+    <div class="pipeline-inner">
+
+        <div class="pipeline-header">
+            <span class="pipeline-label">Como funciona</span>
+            <h2 class="pipeline-title">Do Abstract Científico à Notícia em PT-BR</h2>
+            <p class="pipeline-subtitle">
+                Cada publicação passa por um pipeline automatizado de inteligência artificial que transforma
+                um abstract técnico em inglês em uma notícia jornalística completa para o público brasileiro —
+                citando sempre as fontes originais.
+            </p>
+        </div>
+
+        <!-- Fluxo do pipeline -->
+        <div class="pipeline-flow">
+            <div class="pipeline-step">
+                <div class="pipeline-step-icon">📡</div>
+                <div class="pipeline-step-num">01</div>
+                <div class="pipeline-step-title">Coleta</div>
+                <div class="pipeline-step-desc">Papers recém-publicados são buscados automaticamente em arXiv, Hugging Face, Papers with Code e Semantic Scholar 3× ao dia.</div>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-step">
+                <div class="pipeline-step-icon">📄</div>
+                <div class="pipeline-step-num">02</div>
+                <div class="pipeline-step-title">Abstract</div>
+                <div class="pipeline-step-desc">O abstract original em inglês é extraído junto com título, autores, instituições e metadados relevantes da publicação científica.</div>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-step">
+                <div class="pipeline-step-icon">🧠</div>
+                <div class="pipeline-step-num">03</div>
+                <div class="pipeline-step-title">IA Redige</div>
+                <div class="pipeline-step-desc">Um cluster de até 9 IAs gera a notícia em PT-BR com estrutura jornalística completa, tags semânticas e tom adaptado ao público brasileiro.</div>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-step">
+                <div class="pipeline-step-icon">🚀</div>
+                <div class="pipeline-step-num">04</div>
+                <div class="pipeline-step-title">Publicação</div>
+                <div class="pipeline-step-desc">O artigo é validado, salvo e publicado automaticamente via GitHub Actions — sempre com link para o paper original e citação dos autores.</div>
+            </div>
+        </div>
+
+        <!-- Estrutura jornalística + Stack -->
+        <div class="pipeline-details">
+
+            <div class="pipeline-detail-card">
+                <div class="pipeline-detail-title">📰 Estrutura Jornalística Gerada</div>
+                <ul class="pipeline-list">
+                    <li><strong>Lead</strong> — 1 parágrafo direto revelando a descoberta principal</li>
+                    <li><strong>Contexto e Metodologia</strong> — problema abordado e como foi resolvido</li>
+                    <li><strong>Resultados</strong> — números, benchmarks e métricas do paper</li>
+                    <li><strong>Impacto e Aplicações</strong> — relevância para o ecossistema e mercado BR</li>
+                    <li><strong>Perspectiva do Redator</strong> — análise crítica e conclusão</li>
+                    <li><strong>Tags semânticas</strong> — 5 palavras-chave em PT-BR ou inglês</li>
+                    <li><strong>Título impactante</strong> — até 110 caracteres, estilo jornalístico</li>
+                    <li><strong>Fonte original</strong> — citação e link para o paper científico</li>
+                </ul>
+            </div>
+
+            <div class="pipeline-detail-card">
+                <div class="pipeline-detail-title">⚡ Tecnologias Utilizadas</div>
+                <div class="pipeline-tech-group">
+                    <div class="pipeline-tech-label">Provedores de IA (failover em cascata)</div>
+                    <div class="pipeline-tech-badges">
+                        <span class="ptbadge ptbadge-ai">Groq</span>
+                        <span class="ptbadge ptbadge-ai">Cerebras</span>
+                        <span class="ptbadge ptbadge-ai">Mistral</span>
+                        <span class="ptbadge ptbadge-ai">OpenRouter</span>
+                        <span class="ptbadge ptbadge-ai">DeepSeek</span>
+                        <span class="ptbadge ptbadge-ai">TogetherAI</span>
+                        <span class="ptbadge ptbadge-ai">Gemini</span>
+                        <span class="ptbadge ptbadge-ai">OpenAI</span>
+                    </div>
+                </div>
+                <div class="pipeline-tech-group">
+                    <div class="pipeline-tech-label">Plataforma &amp; Infraestrutura</div>
+                    <div class="pipeline-tech-badges">
+                        <span class="ptbadge ptbadge-plat">.NET 10</span>
+                        <span class="ptbadge ptbadge-plat">Blazor WASM</span>
+                        <span class="ptbadge ptbadge-plat">GitHub Actions</span>
+                        <span class="ptbadge ptbadge-plat">GitHub Pages</span>
+                    </div>
+                </div>
+                <div class="pipeline-tech-group">
+                    <div class="pipeline-tech-label">Fontes Científicas</div>
+                    <div class="pipeline-tech-badges">
+                        <span class="ptbadge ptbadge-src">arXiv</span>
+                        <span class="ptbadge ptbadge-src">Hugging Face</span>
+                        <span class="ptbadge ptbadge-src">Papers with Code</span>
+                        <span class="ptbadge ptbadge-src">Semantic Scholar</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
 <!-- ══ FOOTER ══ -->
 <footer class="site-footer">
     <div class="footer-inner">
