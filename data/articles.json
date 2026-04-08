@@ -23,7 +23,8 @@
       "PDEs",
       "intelig\u00EAncia artificial",
       "redes neurais informadas pela f\u00EDsica"
-    ]
+    ],
+    "translatorProvider": ""
   },
   {
     "id": "arxiv:2604.04916",
@@ -52,7 +53,8 @@
       "Aprendizado de M\u00E1quina",
       "Previs\u00E3o de Eventos",
       "Gest\u00E3o de Energia"
-    ]
+    ],
+    "translatorProvider": ""
   },
   {
     "id": "arxiv:2604.04905",
@@ -80,7 +82,8 @@
       "privacidade",
       "lat\u00EAncia",
       "ClickAIXR"
-    ]
+    ],
+    "translatorProvider": ""
   },
   {
     "id": "arxiv:2604.04902",
@@ -103,7 +106,8 @@
       "interpretabilidade",
       "racioc\u00EDnio l\u00F3gico",
       "LRMs"
-    ]
+    ],
+    "translatorProvider": ""
   },
   {
     "id": "arxiv:2604.04895",
@@ -128,7 +132,8 @@
       "Agentes de IA",
       "Treinamento Distribu\u00EDdo",
       "Privacidade de Dados"
-    ]
+    ],
+    "translatorProvider": ""
   },
   {
     "id": "arxiv:2604.04892",
@@ -150,7 +155,8 @@
       "machine learning",
       "reinforcement learning",
       "intelig\u00EAncia artificial"
-    ]
+    ],
+    "translatorProvider": ""
   },
   {
     "id": "arxiv:2604.04891",
@@ -172,7 +178,8 @@
       "Normaliza\u00E7\u00E3o Espectral",
       "Redes Neurais",
       "Wasserstein Espectral"
-    ]
+    ],
+    "translatorProvider": ""
   },
   {
     "id": "arxiv:2604.04887",
@@ -201,7 +208,8 @@
       "edi\u00E7\u00E3o de cenas",
       "IA generativa",
       "seguran\u00E7a vi\u00E1ria"
-    ]
+    ],
+    "translatorProvider": ""
   },
   {
     "id": "arxiv:2604.04878",
@@ -227,7 +235,8 @@
       "dispositivos m\u00E9dicos",
       "avalia\u00E7\u00E3o de desempenho",
       "aprendizado de m\u00E1quina"
-    ]
+    ],
+    "translatorProvider": ""
   },
   {
     "id": "arxiv:2604.04876",
@@ -249,7 +258,8 @@
       "Complexidade de Kolmogorov",
       "Limites Informacionais-Teor\u00E9ticos",
       "IA Segura"
-    ]
+    ],
+    "translatorProvider": ""
   },
   {
     "id": "arxiv:2604.04721",
@@ -277,7 +287,8 @@
       "desafio",
       "sustenta\u00E7\u00E3o de longo prazo",
       "arXiv"
-    ]
+    ],
+    "translatorProvider": ""
   },
   {
     "id": "arxiv:2604.04664",
@@ -308,6 +319,7 @@
       "Pol\u00EDticas de Aprendizado",
       "Execu\u00E7\u00E3o de Tarefa",
       "VLM"
-    ]
+    ],
+    "translatorProvider": ""
   }
 ]
