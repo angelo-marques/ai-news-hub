@@ -330,6 +330,15 @@ public class AiTranslatorService
             ? $"{string.Join(", ", authors.Take(3))} et al."
             : string.Join(", ", authors);
 
-    private static DateTime ParseDate(string? value) =>
-        !string.IsNullOrEmpty(value) && DateTime.TryParse(value, out var dt) ? dt : DateTime.UtcNow;
+    private static DateTime ParseDate(string? value)
+    {
+        if (string.IsNullOrEmpty(value)) return DateTime.UtcNow;
+        if (!DateTime.TryParse(value, System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.AssumeUniversal |
+                System.Globalization.DateTimeStyles.AdjustToUniversal, out var dt))
+            return DateTime.UtcNow;
+
+        // Never return a future date — cap at now
+        return dt > DateTime.UtcNow ? DateTime.UtcNow : dt;
+    }
 }

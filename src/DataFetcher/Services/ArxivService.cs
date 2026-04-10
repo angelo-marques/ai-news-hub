@@ -76,9 +76,14 @@ public class ArxivService(HttpClient http)
             .ToArray();
 
         var publishedStr = e.Element(Atom + "published")?.Value;
-        var published = publishedStr is not null
-            ? DateTime.Parse(publishedStr, null, System.Globalization.DateTimeStyles.RoundtripKind)
-            : DateTime.UtcNow;
+        DateTime published;
+        if (publishedStr is not null &&
+            DateTime.TryParse(publishedStr, System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.AssumeUniversal |
+                System.Globalization.DateTimeStyles.AdjustToUniversal, out var parsedDate))
+            published = parsedDate > DateTime.UtcNow ? DateTime.UtcNow : parsedDate;
+        else
+            published = DateTime.UtcNow;
 
         var title = e.Element(Atom + "title")?.Value
             .Replace("\n", " ").Replace("  ", " ").Trim() ?? "";

@@ -139,7 +139,7 @@
                             {
                                 <span class="badge badge-new">NOVO</span>
                             }
-                            <span class="meta-date">@featured.PublishedAt.ToString("dd MMM yyyy")</span>
+                            <span class="meta-date">@DisplayDate(featured).ToString("dd MMM yyyy")</span>
                             <span class="meta-sep">·</span>
                             <span class="meta-authors">@FormatAuthors(featured.Authors)</span>
                             @if (!string.IsNullOrEmpty(featured.TranslatorProvider))
@@ -180,7 +180,7 @@
                                 </div>
                                 <h3 class="side-title">@art.TitlePt</h3>
                                 <div class="side-meta">
-                                    <span>@art.PublishedAt.ToString("dd/MM/yyyy")</span> · <span>@FormatAuthors(art.Authors)</span>
+                                    <span>@DisplayDate(art).ToString("dd/MM/yyyy")</span> · <span>@FormatAuthors(art.Authors)</span>
                                     @if (!string.IsNullOrEmpty(art.TranslatorProvider))
                                     {
                                         <span class="badge" style="font-size:10px; background:#1a1a2e; color:#4facfe; margin-left:4px;">✨ @art.TranslatorProvider</span>
@@ -271,7 +271,7 @@
                             </div>
                             <h3 class="card-title">@art.TitlePt</h3>
                             <div class="card-meta">
-                                <span>@art.PublishedAt.ToString("dd/MM/yyyy")</span>
+                                <span>@DisplayDate(art).ToString("dd/MM/yyyy")</span>
                                 <span class="meta-sep">·</span>
                                 <span>@FormatAuthors(art.Authors)</span>
                                 @if (!string.IsNullOrEmpty(art.TranslatorProvider))
@@ -321,7 +321,7 @@
 
                 <div class="modal-meta">
                     <span class="meta-date">
-                        @selectedArticle.PublishedAt.ToString("dd 'de' MMMM 'de' yyyy")
+                        @DisplayDate(selectedArticle).ToString("dd 'de' MMMM 'de' yyyy")
                     </span>
                     <span class="modal-meta-sep">·</span>
                     <span>@FormatAuthors(selectedArticle.Authors)</span>
@@ -679,6 +679,13 @@
         authors.Length == 0 ? "" :
         authors.Length <= 2 ? string.Join(", ", authors) :
         $"{authors[0]} et al.";
+
+    /// Returns the display date for an article, clamped to today if it is in the future.
+    private static DateTime DisplayDate(Article art)
+    {
+        var now = DateTime.UtcNow;
+        return art.PublishedAt > now ? now : art.PublishedAt;
+    }
 
     /// Imagem do artigo via loremflickr (/any + "technology" garante foto real sempre).
     /// ar5iv foi removido pois retorna HTTP 200 com placeholder "NO IMAGE" — onerror não dispara.
