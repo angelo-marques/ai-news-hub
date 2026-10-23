@@ -1,5 +1,8 @@
 # ◆ Hub IA Brasil
 
+Curadoria automática de pesquisas em inteligência artificial, traduzidas para o português do Brasil e publicadas como site estático no GitHub Pages via GitHub Actions. Stack: .NET 10, Blazor WebAssembly, GitHub Actions e Anthropic Claude API.
+----
+
 > Curadoria automática de pesquisas em inteligência artificial, traduzidas para o **português do Brasil**, publicadas como site estático no GitHub Pages via GitHub Actions.
 
 **Fontes:** [arXiv cs.AI/LG/CL/CV](https://arxiv.org/list/cs.AI/recent) · [Papers with Code](https://paperswithcode.com)  
